@@ -1,0 +1,9 @@
+## Copie para local.properties (não versionado) e preencha.
+sdk.dir=C:/Users/<voce>/AppData/Local/Android/Sdk
+
+# Supabase > Project Settings > API
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_ANON_KEY=<anon / publishable key>
+
+# Servidor de assets (DreamHost/PHP) - ainda não usado
+ASSETS_BASE_URL=https://assets.example.com

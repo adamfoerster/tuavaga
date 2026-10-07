@@ -1,0 +1,78 @@
+package com.adamfoerster.tuavaga.core.data.session
+
+import com.adamfoerster.tuavaga.core.data.util.toRemoteError
+import com.adamfoerster.tuavaga.core.database.user.UserDao
+import com.adamfoerster.tuavaga.core.database.user.UserEntity
+import com.adamfoerster.tuavaga.core.domain.session.SessionRepository
+import com.adamfoerster.tuavaga.core.domain.session.SessionState
+import com.adamfoerster.tuavaga.core.domain.user.User
+import com.adamfoerster.tuavaga.core.domain.util.DataError
+import com.adamfoerster.tuavaga.core.domain.util.EmptyResult
+import com.adamfoerster.tuavaga.core.domain.util.Result
+import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.auth.user.UserInfo
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+
+internal class SupabaseSessionRepository(
+    private val auth: Auth,
+    private val userDao: UserDao,
+) : SessionRepository {
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override val sessionState: Flow<SessionState> = auth.sessionStatus
+        .flatMapLatest { status ->
+            when (status) {
+                SessionStatus.Initializing -> flowOf(SessionState.Loading)
+                is SessionStatus.NotAuthenticated -> flowOf(SessionState.SignedOut)
+                // Refresh failed (usually offline) but tokens are still stored: keep the user in.
+                is SessionStatus.RefreshFailure -> auth.currentUserOrNull()
+                    ?.let { observeUser(it) }
+                    ?: flowOf(SessionState.SignedOut)
+                is SessionStatus.Authenticated -> status.session.user
+                    ?.let { observeUser(it) }
+                    ?: flowOf(SessionState.Loading)
+            }
+        }
+        .distinctUntilChanged()
+
+    /** Mirrors the Supabase user into Room and exposes the local copy. */
+    private fun observeUser(info: UserInfo): Flow<SessionState> {
+        val remote = info.toEntity()
+        return userDao.observe(remote.id)
+            .onStart { userDao.upsert(remote) }
+            .map { local -> SessionState.SignedIn((local ?: remote).toUser()) }
+    }
+
+    override suspend fun signOut(): EmptyResult<DataError.Remote> {
+        val result: EmptyResult<DataError.Remote> = try {
+            auth.signOut()
+            Result.Success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            // Server-side revocation failed (e.g. offline); still forget the session locally.
+            auth.clearSession()
+            Result.Failure(e.toRemoteError())
+        }
+        userDao.clear()
+        return result
+    }
+}
+
+private fun UserInfo.toEntity() = UserEntity(
+    id = id,
+    email = email.orEmpty(),
+    fullName = (userMetadata?.get("full_name") as? JsonPrimitive)?.contentOrNull,
+)
+
+private fun UserEntity.toUser() = User(id = id, email = email, fullName = fullName)
