@@ -3,6 +3,13 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+val appVersionName: String = providers.gradleProperty("app.version").get()
+
+/** 0.1.0 -> 100, 1.2.3 -> 10203: monotonic, derived so it never has to be bumped by hand. */
+val appVersionCode: Int = appVersionName.split(".").map(String::toInt).let { (major, minor, patch) ->
+    major * 10_000 + minor * 100 + patch
+}
+
 android {
     namespace = "com.adamfoerster.tuavaga.android"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -11,8 +18,8 @@ android {
         applicationId = "com.adamfoerster.tuavaga"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
     }
 
     buildFeatures {

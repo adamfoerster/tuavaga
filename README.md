@@ -27,6 +27,14 @@ Requisitos: JDK 17+, Android SDK (compileSdk 37 é baixado automaticamente), Xco
 
 Build de produção web: `./gradlew :app:wasmJsBrowserDistribution` → `app/build/dist/wasmJs/productionExecutable/`.
 
+## Versão e changelog
+
+A versão fica em `app.version` no `gradle.properties` (o `versionCode` Android é derivado dela) e
+precisa ser repetida em `MARKETING_VERSION` no `iosApp/Configuration/Config.xcconfig`. Toda alteração
+faz bump de versão e ganha entrada no [CHANGELOG.md](CHANGELOG.md); `./gradlew verifyVersion`
+falha se os três divergirem. As regras de contribuição estão no
+[CLAUDE.md](CLAUDE.md).
+
 ## Arquitetura
 
 Modularizado por feature e por camada (`presentation → domain ← data`), com convention plugins em `build-logic/`.
