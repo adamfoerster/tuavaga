@@ -6,6 +6,7 @@ import com.adamfoerster.tuavaga.core.database.di.databaseModule
 import com.adamfoerster.tuavaga.feature.auth.data.di.authDataModule
 import com.adamfoerster.tuavaga.feature.auth.presentation.di.authPresentationModule
 import com.adamfoerster.tuavaga.feature.home.presentation.di.homePresentationModule
+import com.adamfoerster.tuavaga.feature.onboarding.presentation.di.onboardingPresentationModule
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.KoinAppDeclaration
@@ -25,6 +26,7 @@ fun initKoin(config: KoinAppDeclaration? = null) {
             authDataModule,
             authPresentationModule,
             homePresentationModule,
+            onboardingPresentationModule,
         )
     }
 }

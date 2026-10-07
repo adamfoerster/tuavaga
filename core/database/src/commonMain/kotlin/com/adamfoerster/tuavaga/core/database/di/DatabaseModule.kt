@@ -12,10 +12,12 @@ val databaseModule = module {
     includes(platformDatabaseModule)
     single {
         get<RoomDatabase.Builder<TuaVagaDatabase>>()
-            // Everything stored locally is a cache of the backend; no migrations needed yet.
+            // Schema changes ship with AutoMigrations (keeps the saved session); the destructive
+            // fallback only covers a missing migration path, since everything else is a backend cache.
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
     single { get<TuaVagaDatabase>().sessionDao() }
     single { get<TuaVagaDatabase>().userDao() }
+    single { get<TuaVagaDatabase>().appPrefsDao() }
 }

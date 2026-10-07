@@ -39,7 +39,11 @@ Uma alteração só está pronta quando cumpre **todos** os itens abaixo, na mes
   que não roda em teste JVM).
 - **Erros**: `Result<T, E>` de `core/domain`. Ao capturar falhas de rede capture `Throwable`
   (no wasmJs o Ktor lança `kotlin.Error`) e repasse `CancellationException`.
-- **UI**: sem estilização própria até o design chegar — use os componentes de `core/design-system`.
+- **UI**: design system **Kerb** (`core/design-system`, a partir de `tuavaga.html`). Use os componentes `Kb*`
+  e os tokens de `KerbTheme` (cores, tipografia); nunca cores, fontes ou formas soltas. Textos de UI em display
+  e rótulos ficam em caixa alta (o `KbText` faz isso). Estado sempre com palavra, nunca só cor.
+- **Fases do design**: o plano de implementação por fases (com as migrations Supabase de cada uma) está
+  em `docs/plano-design.md`; siga a ordem e atualize-o ao concluir uma fase.
 - **Segredos**: só em `local.properties` / variáveis de ambiente, lidos via BuildKonfig (`AppConfig`).
   Nunca use a `service_role` key no app.
 - **Room**: alterou entidade → suba a `version` do banco e versione o schema em `core/database/schemas/`.

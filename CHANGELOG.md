@@ -8,6 +8,34 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-07
+
+### Adicionado
+
+- Design system **Kerb** em `core/design-system`, a partir do design `tuavaga.html`: tokens de cor dos
+  temas escuro (padrão) e claro, escala tipográfica, cantos chanfrados e componentes `Kb*` (botão,
+  tag, painel, card, campo, senha, select, toolbar, meter, readout, chip, avatar, checkbox, faixa
+  zebrada, placeholder de foto e layout de tela).
+- Fontes Barlow, Barlow Condensed e JetBrains Mono embarcadas como recursos Compose (licença OFL em
+  `core/design-system/licenses/`).
+- Tela de introdução "Como funciona" (módulo `feature/onboarding`), mostrada uma vez por aparelho antes
+  do login; a preferência fica no Room (tabela `app_prefs`).
+- Plano de implementação do design em fases, com as migrations Supabase de cada uma, em
+  `docs/plano-design.md`.
+
+### Alterado
+
+- Login, cadastro, confirmação de e-mail, recuperação de senha e tela inicial usam o visual Kerb.
+- Banco local na versão 2 com migração automática (a sessão salva é mantida na atualização).
+
+### Removido
+
+- Componentes Material provisórios (`TvPrimaryButton`, `TvTextField`, `FormScaffold` etc.).
+
+### Corrigido
+
+- `kotlin-js-store/wasm/yarn.lock` sem a entrada obsoleta do worker SQLite (hoje ligado por alias do webpack).
+
 ## [0.1.0] - 2026-10-07
 
 ### Adicionado

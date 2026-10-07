@@ -43,4 +43,6 @@ include(":feature:auth:domain")
 include(":feature:auth:data")
 include(":feature:auth:presentation")
 
+include(":feature:onboarding:presentation")
+
 include(":feature:home:presentation")

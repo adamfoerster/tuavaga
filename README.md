@@ -5,7 +5,8 @@ para **Android**, **iOS** e **Web (wasmJs)**, com **Supabase** (Postgres + Auth)
 para estado local em todos os targets.
 
 > Estado atual: base do projeto + autenticação (login, logout, cadastro com confirmação por código,
-> recuperação de senha por código). UI sem design — Material 3 padrão até o layout chegar.
+> recuperação de senha por código) + introdução, já no design system Kerb. O restante do design
+> (`tuavaga.html`) entra em fases — veja [docs/plano-design.md](docs/plano-design.md).
 
 ## Configuração
 
@@ -48,8 +49,9 @@ core/domain                 Result/DataError, User, SessionRepository
 core/data                   cliente Supabase, sessão persistida no Room, BuildKonfig (AppConfig)
 core/database               Room 3: TuaVagaDatabase, DAOs, drivers por plataforma, worker SQLite web
 core/presentation           UiText, ObserveAsEvents
-core/design-system          tema e componentes mínimos (placeholder até o design)
+core/design-system          Kerb: tema escuro/claro, fontes (Barlow, Barlow Condensed, JetBrains Mono) e componentes Kb*
 feature/auth/{domain,data,presentation}   login, cadastro, confirmação, recuperação de senha
+feature/onboarding/presentation   introdução "Como funciona" (mostrada uma vez por aparelho)
 feature/home/presentation   tela logada (placeholder) com "Sair"
 supabase                    migrations SQL e instruções do painel
 ```
