@@ -8,6 +8,39 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-08
+
+### Corrigido
+
+- Dropdown de condomínio vazio no cadastro de vaga (e "Minhas vagas" sem os condomínios): a lista de
+  condomínios lia o estado inicial "carregando" da sessão como "sem usuário" e devolvia vazio. O mesmo
+  fazia a atualização dos condomínios e o "sair do condomínio" falharem logo após entrar no app
+  (regressão da 0.3.2). Agora esse estado inicial é ignorado.
+
+## [0.4.0] - 2026-10-08
+
+### Adicionado
+
+- Migration `20261009000000_spots.sql`: vagas com preço por hora/dia/semana, período mínimo, prazo de
+  cancelamento, modo de aprovação e regras; disponibilidade semanal e exceções por data; RLS (membros veem
+  vagas ativas, o dono vê todas) e as RPCs `save_spot` e `set_spot_status`. A busca de condomínios passa
+  a mostrar quantas vagas estão anunciadas.
+- Aba "Minhas vagas": vagas agrupadas por condomínio, pausar e reativar, "Anunciar neste condomínio" e
+  atalho para "Quero uma vaga".
+- Cadastro e edição de vaga em 3 passos: localização (andar, setor, número, tamanho, descrição), preço e
+  regras, e disponibilidade com calendário (liberar/bloquear dias) e repetição semanal.
+- "Anunciar minha vaga" no Explorar abre o cadastro no condomínio ativo.
+- Calendário mensal Kerb (`KbMonthCalendar`) com os estados livre, fechado, passado, selecionado,
+  bloqueado e reservado.
+- Testes das migrations cobrindo vagas: duplicidade, setor de outro andar, preço obrigatório, horário
+  inválido, edição, vagas pausadas e acesso de quem não é membro.
+
+### Alterado
+
+- Rótulos longos no `KbToolbar` diminuem para caber em vez de serem cortados.
+- O teste das migrations reaplica todas (a partir da segunda) em ordem e só aceita erros vindos do
+  Postgres, evitando falsos positivos.
+
 ## [0.3.2] - 2026-10-08
 
 ### Corrigido

@@ -17,6 +17,7 @@ import com.adamfoerster.tuavaga.core.designsystem.KerbTheme
 import com.adamfoerster.tuavaga.core.designsystem.components.KbIcons
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTab
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTabBar
+import com.adamfoerster.tuavaga.feature.hosting.presentation.myspots.MySpotsRoot
 import com.adamfoerster.tuavaga.feature.profile.presentation.ProfileRoot
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -28,16 +29,25 @@ private val tabs = listOf(
     KbTab(MainTab.PROFILE, "Perfil", KbIcons.Profile),
 )
 
+/** Navigation out of the shell, wired by the app root. */
+class ShellNavigation(
+    val onAddCondo: () -> Unit,
+    /** `null` condoId = the active condominium. */
+    val onCreateSpot: (condoId: String?) -> Unit,
+    val onEditSpot: (spotId: String) -> Unit,
+)
+
 @Composable
 fun MainShellRoot(
-    onAddCondo: () -> Unit,
+    navigation: ShellNavigation,
     viewModel: ShellViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     MainShellScreen(
         state = state,
+        navigation = navigation,
         onAction = { action ->
-            if (action == ShellAction.OnAddCondoClick) onAddCondo()
+            if (action == ShellAction.OnAddCondoClick) navigation.onAddCondo()
             viewModel.onAction(action)
         },
     )
@@ -46,8 +56,10 @@ fun MainShellRoot(
 @Composable
 fun MainShellScreen(
     state: ShellState,
+    navigation: ShellNavigation,
     onAction: (ShellAction) -> Unit,
 ) {
+    val createInActiveCondo = { navigation.onCreateSpot(state.active?.condo?.id) }
     Box(
         modifier = Modifier.fillMaxSize().background(KerbTheme.colors.surface),
         contentAlignment = Alignment.TopCenter,
@@ -56,17 +68,15 @@ fun MainShellScreen(
             CondoSelectorBar(active = state.active, onClick = { onAction(ShellAction.OnOpenSwitcher) })
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when (state.tab) {
-                    MainTab.EXPLORE -> ExplorePlaceholder(
-                        active = state.active,
-                        onListSpot = { onAction(ShellAction.OnTabSelect(MainTab.MY_SPOTS)) },
-                    )
+                    MainTab.EXPLORE -> ExplorePlaceholder(active = state.active, onListSpot = createInActiveCondo)
                     MainTab.BOOKINGS -> ComingSoonTab(
                         title = "Reservas",
                         text = "Suas reservas aparecem aqui quando a busca de vagas chegar.",
                     )
-                    MainTab.MY_SPOTS -> ComingSoonTab(
-                        title = "Minhas vagas",
-                        text = "Em breve você cadastra sua vaga, define preço e disponibilidade.",
+                    MainTab.MY_SPOTS -> MySpotsRoot(
+                        onCreateSpot = { condoId -> navigation.onCreateSpot(condoId ?: state.active?.condo?.id) },
+                        onEditSpot = navigation.onEditSpot,
+                        onWantSpot = { onAction(ShellAction.OnTabSelect(MainTab.EXPLORE)) },
                     )
                     MainTab.MESSAGES -> ComingSoonTab(
                         title = "Mensagens",

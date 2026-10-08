@@ -33,6 +33,11 @@ data class CondoPreview(
     val blocks: List<String>? = null,
 )
 
+/** A garage level of a condominium the user belongs to ("Subsolo 2"), with its sectors in order. */
+data class GarageLevel(val id: String, val name: String, val sectors: List<GarageSector>)
+
+data class GarageSector(val id: String, val name: String)
+
 /** Garage layout typed in "Cadastrar meu condomínio": levels in display order, each with its sectors. */
 data class NewLevel(val name: String, val sectors: List<String>)
 

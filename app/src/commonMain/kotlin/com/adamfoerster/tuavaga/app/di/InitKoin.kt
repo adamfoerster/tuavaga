@@ -6,6 +6,8 @@ import com.adamfoerster.tuavaga.core.data.di.coreDataModule
 import com.adamfoerster.tuavaga.core.database.di.databaseModule
 import com.adamfoerster.tuavaga.feature.auth.data.di.authDataModule
 import com.adamfoerster.tuavaga.feature.auth.presentation.di.authPresentationModule
+import com.adamfoerster.tuavaga.feature.hosting.data.di.hostingDataModule
+import com.adamfoerster.tuavaga.feature.hosting.presentation.di.hostingPresentationModule
 import com.adamfoerster.tuavaga.feature.onboarding.presentation.di.onboardingPresentationModule
 import com.adamfoerster.tuavaga.feature.profile.presentation.di.profilePresentationModule
 import org.koin.core.context.startKoin
@@ -29,6 +31,8 @@ fun initKoin(config: KoinAppDeclaration? = null) {
             authPresentationModule,
             profilePresentationModule,
             onboardingPresentationModule,
+            hostingDataModule,
+            hostingPresentationModule,
         )
     }
 }

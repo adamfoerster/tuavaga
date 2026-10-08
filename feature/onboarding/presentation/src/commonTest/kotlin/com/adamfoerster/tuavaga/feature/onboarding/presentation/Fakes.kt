@@ -4,6 +4,7 @@ import com.adamfoerster.tuavaga.core.domain.condo.ActiveCondoRepository
 import com.adamfoerster.tuavaga.core.domain.condo.CondoError
 import com.adamfoerster.tuavaga.core.domain.condo.CondoPreview
 import com.adamfoerster.tuavaga.core.domain.condo.CondoRepository
+import com.adamfoerster.tuavaga.core.domain.condo.GarageLevel
 import com.adamfoerster.tuavaga.core.domain.condo.Membership
 import com.adamfoerster.tuavaga.core.domain.condo.NewCondominium
 import com.adamfoerster.tuavaga.core.domain.condo.ResidentInfo
@@ -64,6 +65,8 @@ class FakeCondoRepository : CondoRepository {
     }
 
     override suspend fun blocksOf(condoId: String) = blocksResult
+
+    override suspend fun garageOf(condoId: String): Result<List<GarageLevel>, DataError.Remote> = Result.Success(emptyList())
 
     override suspend fun join(condoId: String, resident: ResidentInfo): EmptyResult<CondoError> {
         joins += condoId to resident

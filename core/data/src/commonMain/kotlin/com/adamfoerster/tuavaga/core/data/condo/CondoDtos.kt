@@ -3,6 +3,8 @@ package com.adamfoerster.tuavaga.core.data.condo
 import com.adamfoerster.tuavaga.core.database.condo.MembershipEntity
 import com.adamfoerster.tuavaga.core.domain.condo.CondoPreview
 import com.adamfoerster.tuavaga.core.domain.condo.Condominium
+import com.adamfoerster.tuavaga.core.domain.condo.GarageLevel
+import com.adamfoerster.tuavaga.core.domain.condo.GarageSector
 import com.adamfoerster.tuavaga.core.domain.condo.Membership
 import com.adamfoerster.tuavaga.core.domain.condo.MembershipKind
 import kotlinx.serialization.SerialName
@@ -37,6 +39,24 @@ internal data class CondoPreviewDto(
     @SerialName("blocks_count") val blocksCount: Int,
     @SerialName("listed_spots") val listedSpots: Int,
     @SerialName("is_member") val isMember: Boolean,
+)
+
+/** Row of `condo_levels` with its sectors embedded. */
+@Serializable
+internal data class LevelDto(
+    val id: String,
+    val name: String,
+    val position: Int,
+    @SerialName("condo_sectors") val sectors: List<SectorDto> = emptyList(),
+)
+
+@Serializable
+internal data class SectorDto(val id: String, val name: String, val position: Int)
+
+internal fun LevelDto.toGarageLevel() = GarageLevel(
+    id = id,
+    name = name,
+    sectors = sectors.sortedBy { it.position }.map { GarageSector(it.id, it.name) },
 )
 
 internal const val KIND_RESIDENT = "morador"

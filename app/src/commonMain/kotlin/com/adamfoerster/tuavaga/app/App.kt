@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.adamfoerster.tuavaga.app.shell.MainShellRoot
+import com.adamfoerster.tuavaga.app.shell.ShellNavigation
 import com.adamfoerster.tuavaga.core.designsystem.KerbTheme
 import com.adamfoerster.tuavaga.core.designsystem.TuaVagaTheme
 import com.adamfoerster.tuavaga.core.designsystem.components.KbButton
@@ -27,6 +28,8 @@ import com.adamfoerster.tuavaga.core.designsystem.components.KbText
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTone
 import com.adamfoerster.tuavaga.feature.auth.presentation.navigation.AuthGraph
 import com.adamfoerster.tuavaga.feature.auth.presentation.navigation.authGraph
+import com.adamfoerster.tuavaga.feature.hosting.presentation.navigation.SpotWizardRoute
+import com.adamfoerster.tuavaga.feature.hosting.presentation.navigation.hostingGraph
 import com.adamfoerster.tuavaga.feature.onboarding.presentation.navigation.CondoOnboardingGraph
 import com.adamfoerster.tuavaga.feature.onboarding.presentation.navigation.IntroRoute
 import com.adamfoerster.tuavaga.feature.onboarding.presentation.navigation.condoOnboardingGraph
@@ -105,8 +108,15 @@ private fun MainArea() {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = MainRoute) {
         composable<MainRoute> {
-            MainShellRoot(onAddCondo = { navController.navigate(CondoOnboardingGraph) })
+            MainShellRoot(
+                navigation = ShellNavigation(
+                    onAddCondo = { navController.navigate(CondoOnboardingGraph) },
+                    onCreateSpot = { condoId -> navController.navigate(SpotWizardRoute(condoId = condoId)) },
+                    onEditSpot = { spotId -> navController.navigate(SpotWizardRoute(spotId = spotId)) },
+                ),
+            )
         }
+        hostingGraph(navController)
         condoOnboardingGraph(
             navController = navController,
             onFinished = { navController.popBackStack(MainRoute, inclusive = false) },

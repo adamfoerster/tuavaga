@@ -5,6 +5,7 @@ import com.adamfoerster.tuavaga.core.domain.condo.CondoError
 import com.adamfoerster.tuavaga.core.domain.condo.CondoPreview
 import com.adamfoerster.tuavaga.core.domain.condo.CondoRepository
 import com.adamfoerster.tuavaga.core.domain.condo.Condominium
+import com.adamfoerster.tuavaga.core.domain.condo.GarageLevel
 import com.adamfoerster.tuavaga.core.domain.condo.Membership
 import com.adamfoerster.tuavaga.core.domain.condo.MembershipKind
 import com.adamfoerster.tuavaga.core.domain.condo.NewCondominium
@@ -60,6 +61,7 @@ class FakeCondos : CondoRepository {
     override suspend fun search(query: String): Result<List<CondoPreview>, DataError.Remote> = Result.Success(emptyList())
     override suspend fun findByInviteCode(code: String): Result<CondoPreview?, DataError.Remote> = Result.Success(null)
     override suspend fun blocksOf(condoId: String): Result<List<String>, DataError.Remote> = Result.Success(emptyList())
+    override suspend fun garageOf(condoId: String): Result<List<GarageLevel>, DataError.Remote> = Result.Success(emptyList())
     override suspend fun join(condoId: String, resident: ResidentInfo): EmptyResult<CondoError> = Result.Success(Unit)
     override suspend fun create(condo: NewCondominium, resident: ResidentInfo): Result<String, CondoError> =
         Result.Success("new")

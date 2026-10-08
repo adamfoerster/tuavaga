@@ -4,7 +4,7 @@
 | --- | --- | --- |
 | 0 · Design system Kerb + auth | 0.2.0 | concluída |
 | 1 · Condomínios e cadastro do morador | 0.3.0 | concluída |
-| 2 · Locador: minhas vagas e cadastro de vaga | 0.4.0 | pendente |
+| 2 · Locador: minhas vagas e cadastro de vaga | 0.4.0 | concluída |
 | 3 · Explorar e pedir reserva | 0.5.0 | pendente |
 | 4 · Ciclo da reserva | 0.6.0 | pendente |
 | 5 · Chat e notificações em tempo real | 0.7.0 | pendente |
@@ -167,6 +167,20 @@ navegação cruzada (ex.: "Enviar solicitação" → detalhe da reserva) é feit
 - Estado de borda "Seja o primeiro" (convite com código) no Explorar vazio.
 - Testes: validação de cada passo (preço ≥ 1 período, número obrigatório), geração das janelas a
   partir de frequência + dias, ViewModels do wizard e de minhas vagas.
+
+**Como ficou (diferenças em relação ao plano acima)**
+- Exceções por data em uma tabela só, `spot_date_overrides` (`open` com horário ou `blocked`), em vez de
+  só `spot_blocked_dates`: "Liberar" um dia fora da regra semanal também precisa ser salvo.
+- Gravação por RPC (`save_spot`, `set_spot_status`), sem insert/update direto; a edição substitui a
+  disponibilidade inteira. `can_read_spot` (security definer) evita recursão de RLS.
+- A garagem (`GarageLevel`) entrou em `core` (`CondoRepository.garageOf`), pois a fase 3 também usa.
+- Calendário: os dias são selecionados (SEL) e um botão "Liberar N dias" / "Bloquear N dias" aplica a
+  ação escolhida no toolbar; a prancha não mostrava como confirmar. Legenda com "Livre" e "Fechada"
+  além de SEL/BLQ (RES chega na fase 4).
+- Cards de "Minhas vagas": "Pausar" na vaga ativa (a prancha mostra "Agenda", que é da fase 4);
+  tocar no card abre a edição. Ganhos e reservas aparecem como 0 até a fase 4.
+- Fotos de "como chegar": placeholders, envio adiado como decidido.
+- Fuso fixo UTC−3 para "hoje" (ver `CLAUDE.md` → Datas).
 
 ## Fase 3 — Explorar e pedir reserva (0.5.0)
 

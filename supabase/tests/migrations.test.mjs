@@ -24,6 +24,8 @@ async function expectOk(name, sql, params = [], check) {
 async function expectError(name, sql, params = [], codeOrText) {
   try { await db.query(sql, params); fail(name, 'no error'); }
   catch (e) {
+    // Only database errors count; a JS error here means the test itself is wrong.
+    if (!e.code && !/permission denied|row-level security/.test(e.message)) return fail(name, 'not a database error: ' + e.message);
     const got = (e.code || '') + ' ' + e.message;
     if (codeOrText && !got.includes(codeOrText)) fail(name, 'unexpected error: ' + got); else ok(name + ' -> ' + (e.code || e.message));
   }
@@ -53,9 +55,12 @@ for (const f of files) {
   try { await db.exec(readFileSync(join(migrationsDir, f), 'utf8')); ok('apply ' + f); }
   catch (e) { fail('apply ' + f, e.message); process.exit(1); }
 }
-const condoFile = files.find((f) => f.includes('condominiums'));
-try { await db.exec(readFileSync(join(migrationsDir, condoFile), 'utf8')); ok('re-apply ' + condoFile + ' (idempotent)'); }
-catch (e) { fail('re-apply ' + condoFile, e.message); }
+// Every migration after the first (profiles predates the idempotency rule) must survive being
+// applied again; re-apply them in order so later ones keep overriding earlier function versions.
+for (const f of files.slice(1)) {
+  try { await db.exec(readFileSync(join(migrationsDir, f), 'utf8')); ok('re-apply ' + f + ' (idempotent)'); }
+  catch (e) { fail('re-apply ' + f, e.message); }
+}
 
 const U1 = '11111111-1111-1111-1111-111111111111';
 const U2 = '22222222-2222-2222-2222-222222222222';
@@ -123,6 +128,50 @@ for (const [name, prefix] of [['Edifício Santa Clara', 'SC'], ['Condomínio das
   const c = r.rows[0].c;
   if (c.startsWith(prefix + '-') && /^[A-Z]{2}-[A-Z0-9]{4}$/.test(c)) ok(`${name} -> ${c}`); else fail(name, c);
 }
+
+// --- Fase 2 · vagas ---------------------------------------------------------------------------
+console.log('\n# spots (u1 owns, u2 joins later)');
+await as(U1);
+const garage = (await db.query(
+  `select l.id level_id, l.name, s.id sector_id, s.name sector from public.condo_levels l
+   left join public.condo_sectors s on s.level_id = l.id order by l.position, s.position`)).rows;
+const s2 = garage.find((g) => g.name === 'Subsolo 2' && g.sector === 'B');
+const s1 = garage.find((g) => g.name === 'Subsolo 1' && g.sector === 'A');
+const terreo = garage.find((g) => g.name === 'Térreo');
+const weekly = JSON.stringify([1, 2, 3, 4, 5].map((d) => ({ weekday: d, start: '08:00', end: '18:00' })));
+const overrides = JSON.stringify([{ day: '2026-10-12', kind: 'blocked' }, { day: '2026-10-17', kind: 'open', start: '09:00', end: '12:00' }]);
+const saveSpot = (id, level, sector, number, hour, day, week, weekly = '[]', overrides = '[]') =>
+  `select public.save_spot(${id ? `'${id}'` : 'null'}, '${condoId}', '${level}', ${sector ? `'${sector}'` : 'null'}, '${number}',
+     '2,5 × 5,0', 'Perto do elevador', ${hour ?? 'null'}, ${day ?? 'null'}, ${week ?? 'null'}, 120, 24, 'manual',
+     '{Sem caminhonete,Respeitar horário}', '${weekly}'::jsonb, '${overrides}'::jsonb) as id`;
+const spotId = (await expectOk('create spot B2-14', saveSpot(null, s2.level_id, s2.sector_id, '14', 800, 3500, 18000, weekly, overrides)))?.[0]?.id;
+await expectOk('weekly window saved', 'select count(*)::int n from public.spot_weekly_availability where spot_id = $1', [spotId], (r) => r[0].n === 5 ? null : 'n=' + r[0].n);
+await expectOk('overrides saved', `select kind, to_char(start_time, 'HH24:MI') s from public.spot_date_overrides where spot_id = $1 order by day`, [spotId],
+  (r) => r.length === 2 && r[0].kind === 'blocked' && r[1].s === '09:00' ? null : JSON.stringify(r));
+await expectOk('spot without sector (Térreo)', saveSpot(null, terreo.level_id, null, '1', null, 3000, null));
+await expectError('same number on the same level/sector', saveSpot(null, s2.level_id, s2.sector_id, ' 14', 900, null, null), [], '23505');
+await expectError('sector from another level', saveSpot(null, s2.level_id, s1.sector_id, '15', 900, null, null), [], '22023');
+await expectError('no price at all', saveSpot(null, s2.level_id, s2.sector_id, '16', null, null, null), [], '23514');
+await expectError('invalid time window', saveSpot(null, s2.level_id, s2.sector_id, '17', 900, null, null,
+  JSON.stringify([{ weekday: 1, start: '18:00', end: '08:00' }])), [], '23514');
+await expectOk('edit replaces availability', saveSpot(spotId, s2.level_id, s2.sector_id, '14', 1000, null, null, '[]', '[]'));
+await expectOk('availability replaced', 'select (select count(*) from public.spot_weekly_availability where spot_id = $1)::int w, (select count(*) from public.spot_date_overrides where spot_id = $1)::int o', [spotId],
+  (r) => r[0].w === 0 && r[0].o === 0 ? null : JSON.stringify(r));
+await expectError('direct insert into spots is blocked', `insert into public.spots (condo_id, level_id, number, price_hour_cents) values ($1, $2, '99', 100)`, [condoId, s2.level_id], 'row-level security');
+await expectOk('search counts active spots', `select listed_spots from public.search_condominiums('alameda')`, [], (r) => r[0].listed_spots === 2 ? null : JSON.stringify(r));
+await expectOk('pause', `select public.set_spot_status($1, 'paused')`, [spotId]);
+await expectOk('owner still sees the paused spot', 'select status from public.spots where id = $1', [spotId], (r) => r[0]?.status === 'paused' ? null : JSON.stringify(r));
+
+await as(U2);
+await expectOk('outsider sees no spots', 'select * from public.spots', [], (r) => r.length === 0 ? null : 'rows=' + r.length);
+await expectError('outsider cannot create spots', saveSpot(null, s2.level_id, s2.sector_id, '20', 900, null, null), [], '42501');
+await expectOk('u2 joins again', `select public.join_condominium($1, 'A', '12', 'morador', null, null)`, [condoId]);
+await expectOk('member sees only active spots', 'select number from public.spots', [], (r) => r.length === 1 && r[0].number === '1' ? null : JSON.stringify(r));
+await expectError('member cannot pause someone else\'s spot', `select public.set_spot_status($1, 'active')`, [spotId], 'P0002');
+await expectError('member cannot edit someone else\'s spot', saveSpot(spotId, s2.level_id, s2.sector_id, '14', 1, null, null), [], 'P0002');
+await expectOk('member creates a spot of their own', saveSpot(null, s1.level_id, s1.sector_id, '4', 700, null, null));
+await as('anon');
+await expectError('anon cannot save spots', saveSpot(null, s2.level_id, s2.sector_id, '30', 900, null, null), [], 'permission denied');
 
 console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL PASSED');
 process.exit(failures ? 1 : 0);

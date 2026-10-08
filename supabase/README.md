@@ -8,6 +8,7 @@ Rode as migrations **em ordem** no SQL Editor do projeto (ou `supabase db push` 
 | --- | --- |
 | `20261007000000_profiles.sql` | `public.profiles` com RLS e o trigger que preenche o perfil no cadastro |
 | `20261008000000_condominiums.sql` | condomínios, andares/setores da garagem, vínculos (`memberships`), veículos, RLS e as RPCs `search_condominiums`, `find_condominium_by_invite`, `condominium_blocks`, `join_condominium`, `create_condominium` |
+| `20261009000000_spots.sql` | vagas (`spots`), janela semanal (`spot_weekly_availability`), exceções por data (`spot_date_overrides`), RLS e as RPCs `save_spot` e `set_spot_status`; a busca e o convite passam a contar as vagas ativas |
 
 Regras da fase de condomínios:
 
@@ -17,6 +18,14 @@ Regras da fase de condomínios:
   as duas também atualizam nome e telefone em `profiles`.
 - Veículos são do usuário (não do condomínio) e só o dono os vê.
 - As RPCs só podem ser chamadas por usuários logados (`anon` não tem `execute`).
+
+Regras da fase de vagas:
+
+- Membros do condomínio leem as vagas **ativas** e a disponibilidade delas; o dono lê todas as suas
+  (inclusive pausadas).
+- Vaga só é criada ou editada por `save_spot`, que confere o vínculo com o condomínio e se andar e setor
+  são dele; a edição substitui a disponibilidade inteira. Pausar/reativar é `set_spot_status`.
+- Um número por andar/setor (`spots_place_unique`); pelo menos um preço (hora, dia ou semana).
 
 ### Testes das migrations
 

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,15 +63,21 @@ fun <T> KbToolbar(
                     .padding(horizontal = 12.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                KbText(
+                // Long labels ("Aprovar cada pedido") shrink to fit instead of being clipped.
+                BasicText(
                     text = option.label.uppercase(),
-                    style = KerbTheme.typography.sm.copy(fontSize = 15.sp, lineHeight = 15.sp, letterSpacing = 0.08.em),
-                    color = when {
-                        active -> colors.onApex
-                        enabled -> colors.ink
-                        else -> colors.inkMuted
-                    },
+                    style = KerbTheme.typography.sm.copy(
+                        fontSize = 15.sp,
+                        lineHeight = 15.sp,
+                        letterSpacing = 0.08.em,
+                        color = when {
+                            active -> colors.onApex
+                            enabled -> colors.ink
+                            else -> colors.inkMuted
+                        },
+                    ),
                     maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 15.sp),
                 )
             }
         }

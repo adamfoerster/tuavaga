@@ -6,6 +6,7 @@ import com.adamfoerster.tuavaga.core.database.condo.MembershipDao
 import com.adamfoerster.tuavaga.core.domain.condo.CondoError
 import com.adamfoerster.tuavaga.core.domain.condo.CondoPreview
 import com.adamfoerster.tuavaga.core.domain.condo.CondoRepository
+import com.adamfoerster.tuavaga.core.domain.condo.GarageLevel
 import com.adamfoerster.tuavaga.core.domain.condo.Membership
 import com.adamfoerster.tuavaga.core.domain.condo.NewCondominium
 import com.adamfoerster.tuavaga.core.domain.condo.ResidentInfo
@@ -22,6 +23,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -39,14 +41,9 @@ internal class SupabaseCondoRepository(
     private val membershipDao: MembershipDao,
 ) : CondoRepository {
 
-    private val userId: Flow<String?> = sessionRepository.sessionState
-        .map { (it as? SessionState.SignedIn)?.user?.id }
-        .distinctUntilChanged()
+    private val userId: Flow<String?> = sessionRepository.sessionState.signedInUserId()
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override val memberships: Flow<List<Membership>> = userId.flatMapLatest { id ->
-        if (id == null) flowOf(emptyList()) else membershipDao.observe(id).map { rows -> rows.map { it.toMembership() } }
-    }
+    override val memberships: Flow<List<Membership>> = observeMemberships(userId, membershipDao)
 
     override suspend fun refreshMemberships(): EmptyResult<DataError.Remote> {
         val uid = userId.first() ?: return Result.Failure(DataError.Remote.UNAUTHORIZED)
@@ -77,6 +74,16 @@ internal class SupabaseCondoRepository(
     override suspend fun blocksOf(condoId: String): Result<List<String>, DataError.Remote> = remoteCall {
         val data = postgrest.rpc("condominium_blocks", buildJsonObject { put("p_condo", condoId) }).data
         Json.decodeFromString<List<String>?>(data).orEmpty()
+    }
+
+    override suspend fun garageOf(condoId: String): Result<List<GarageLevel>, DataError.Remote> = remoteCall {
+        postgrest.from("condo_levels")
+            .select(Columns.raw("id,name,position,condo_sectors(id,name,position)")) {
+                filter { eq("condo_id", condoId) }
+                order("position", Order.ASCENDING)
+            }
+            .decodeList<LevelDto>()
+            .map { it.toGarageLevel() }
     }
 
     override suspend fun join(condoId: String, resident: ResidentInfo): EmptyResult<CondoError> = condoCall {
@@ -137,6 +144,23 @@ internal class SupabaseCondoRepository(
         put("p_phone", resident.phone)
     }
 }
+
+/**
+ * Id of the signed-in user, `null` when signed out. Skips [SessionState.Loading]: every new collector
+ * of the session sees Loading first, and reading it as "no user" made `first()` callers get an empty
+ * membership list (empty condominium dropdown) or fail with UNAUTHORIZED right after sign-in.
+ */
+internal fun Flow<SessionState>.signedInUserId(): Flow<String?> =
+    filter { it != SessionState.Loading }
+        .map { (it as? SessionState.SignedIn)?.user?.id }
+        .distinctUntilChanged()
+
+/** The cached memberships of [userId] (empty when signed out). */
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun observeMemberships(userId: Flow<String?>, dao: MembershipDao): Flow<List<Membership>> =
+    userId.flatMapLatest { id ->
+        if (id == null) flowOf(emptyList()) else dao.observe(id).map { rows -> rows.map { it.toMembership() } }
+    }
 
 private inline fun <T> condoCall(block: () -> T): Result<T, CondoError> = try {
     Result.Success(block())

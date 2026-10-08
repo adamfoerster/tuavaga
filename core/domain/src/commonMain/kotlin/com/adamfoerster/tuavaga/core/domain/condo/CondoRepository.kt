@@ -28,6 +28,9 @@ interface CondoRepository {
 
     suspend fun blocksOf(condoId: String): Result<List<String>, DataError.Remote>
 
+    /** Levels and sectors of a condominium the user belongs to, in display order. */
+    suspend fun garageOf(condoId: String): Result<List<GarageLevel>, DataError.Remote>
+
     /**
      * Joins (or updates the link to) [condoId]. Does not touch [memberships]: callers refresh when
      * their flow is done, since a new membership moves the app out of onboarding.

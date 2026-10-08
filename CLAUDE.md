@@ -45,6 +45,9 @@ Uma alteração só está pronta quando cumpre **todos** os itens abaixo, na mes
   e rótulos ficam em caixa alta (o `KbText` faz isso). Estado sempre com palavra, nunca só cor.
 - **Fases do design**: o plano de implementação por fases (com as migrations Supabase de cada uma) está
   em `docs/plano-design.md`; siga a ordem e atualize-o ao concluir uma fase.
+- **Datas**: `kotlinx-datetime`. "Hoje" do app usa o fuso fixo UTC−3 (`APP_TIME_ZONE` em
+  `feature/hosting/presentation/di`); nunca `TimeZone.of("America/Sao_Paulo")` — na web (wasmJs) não há
+  base de fusos e o app quebra. Preços em centavos (`Int`), horários em minutos desde a meia-noite.
 - **Segredos**: só em `local.properties` / variáveis de ambiente, lidos via BuildKonfig (`AppConfig`).
   Nunca use a `service_role` key no app.
 - **Room**: alterou entidade → suba a `version` do banco, adicione um `AutoMigration` (para não perder a
@@ -80,6 +83,9 @@ Uma alteração só está pronta quando cumpre **todos** os itens abaixo, na mes
   do Main, então use `advanceTimeBy` / `advanceUntilIdle`. Sem tempo envolvido, `UnconfinedTestDispatcher`.
 - Fakes ficam no `commonTest` de cada módulo (ex.: `feature/onboarding/.../Fakes.kt`, `app/.../AppFakes.kt`).
 - Regra de navegação do app é função pura (`AppState.area()`, `signedOutStart()`) e se testa sem UI.
+- O `SessionRepository` real emite `Loading` antes do estado conhecido para **cada** coletor. Fakes que
+  emitem `SignedIn` direto escondem bugs de quem faz `first()`: ao consumir a sessão, ignore `Loading`
+  (ver `signedInUserId()` em `core/data`) e, nos testes desse consumo, faça o fake emitir `Loading` antes.
 
 ### App web no navegador (verificação visual)
 
@@ -91,6 +97,10 @@ Uma alteração só está pronta quando cumpre **todos** os itens abaixo, na mes
   localmente — um arquivo temporário em `app/src/wasmJsMain` com um módulo Koin de fakes e
   `loadKoinModules(...)` logo após `initKoin()` em `main.kt`. Reverta os dois antes de concluir
   (`grep -rn TEMPORARY app/src` deve voltar vazio) e nunca faça commit disso.
+- **Mesmo teste no Android**: coloque o arquivo de fakes temporário em `app/src/commonMain` e chame
+  `loadKoinModules(...)` no fim de `TuaVagaApplication.onCreate`; gere o APK, instale com
+  `adb -s <emulador> install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk`, navegue com
+  `adb shell input tap X Y` e capture com `adb exec-out screencap -p`. Reverta tudo ao terminar.
 - **Zerar o banco local da web** (ex.: rever a introdução): o worker SQLite trava os arquivos OPFS
   enquanto o app roda. Navegue para uma URL estática da mesma origem (`http://localhost:8080/tuavaga.js`)
   e apague com `navigator.storage.getDirectory()` + `removeEntry(nome, { recursive: true })`.
