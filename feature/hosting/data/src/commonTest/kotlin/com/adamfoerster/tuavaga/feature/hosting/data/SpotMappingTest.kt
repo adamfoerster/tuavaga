@@ -1,10 +1,11 @@
 package com.adamfoerster.tuavaga.feature.hosting.data
 
-import com.adamfoerster.tuavaga.feature.hosting.domain.ApprovalMode
-import com.adamfoerster.tuavaga.feature.hosting.domain.DayOverride
+import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
+import com.adamfoerster.tuavaga.core.domain.spot.DayOverride
+import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotDraft
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotStatus
-import com.adamfoerster.tuavaga.feature.hosting.domain.TimeWindow
+import com.adamfoerster.tuavaga.core.domain.spot.TimeWindow
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
@@ -22,7 +23,7 @@ class SpotMappingTest {
 
     private val row = """
         {"id":"s1","condo_id":"c1","level_id":"l2","sector_id":"sB","number":"27","size_label":"2,5 × 5,0",
-         "description":"Perto do elevador","price_hour_cents":800,"price_day_cents":3500,"price_week_cents":null,
+         "description":"Perto do elevador","features":["coberta","eletrica","x"],"height_cm":210,"directions":"Desça a rampa","price_hour_cents":800,"price_day_cents":3500,"price_week_cents":null,
          "min_period_minutes":120,"cancel_notice_hours":24,"approval":"auto","rules":["Sem caminhonete"],"status":"paused",
          "condo_levels":{"name":"Subsolo 2"},"condo_sectors":{"name":"B"},
          "spot_weekly_availability":[{"weekday":1,"start_time":"08:00:00","end_time":"18:00:00"},
@@ -36,6 +37,9 @@ class SpotMappingTest {
         val spot = json.decodeFromString<SpotDto>(row).toSpot()
 
         assertEquals("B2-27", spot.code)
+        // Unknown feature keys are ignored.
+        assertEquals(setOf(SpotFeature.COVERED, SpotFeature.ELECTRIC), spot.features)
+        assertEquals(210, spot.heightCm)
         assertEquals(800, spot.prices.hourCents)
         assertEquals(null, spot.prices.weekCents)
         assertEquals(ApprovalMode.AUTO, spot.approval)
@@ -51,7 +55,7 @@ class SpotMappingTest {
         val spot = json.decodeFromString<SpotDto>(row).toSpot()
         val draft = SpotDraft(
             id = null, condoId = spot.condoId, levelId = spot.levelId, sectorId = null, number = " 27 ",
-            sizeLabel = null, description = "Coberta", prices = spot.prices, minPeriodMinutes = 60,
+            sizeLabel = null, description = "Coberta", features = spot.features, heightCm = 210, directions = null, prices = spot.prices, minPeriodMinutes = 60,
             cancelNoticeHours = 2, approval = ApprovalMode.MANUAL, rules = spot.rules, availability = spot.availability,
         )
 
@@ -61,6 +65,9 @@ class SpotMappingTest {
         assertEquals(JsonNull, params["p_sector"])
         assertEquals("27", params["p_number"]!!.jsonPrimitive.content)
         assertEquals("manual", params["p_approval"]!!.jsonPrimitive.content)
+        assertEquals(listOf("coberta", "eletrica"), params["p_features"]!!.jsonArray.map { it.jsonPrimitive.content })
+        assertEquals(210, params["p_height_cm"]!!.jsonPrimitive.int)
+        assertEquals(JsonNull, params["p_directions"])
         val weekly = params["p_weekly"]!!.jsonArray
         assertEquals(1, weekly[0].jsonObject["weekday"]!!.jsonPrimitive.int)
         assertEquals("24:00", weekly[1].jsonObject["end"]!!.jsonPrimitive.content)

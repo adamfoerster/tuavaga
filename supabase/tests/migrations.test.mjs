@@ -6,9 +6,10 @@ import { join } from 'node:path';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PGlite } from '@electric-sql/pglite';
+import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
 
 const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
-const db = new PGlite();
+const db = new PGlite({ extensions: { btree_gist } });
 
 let failures = 0;
 const ok = (name) => console.log('  ok  ' + name);
@@ -39,6 +40,7 @@ async function as(user) {
 // --- Supabase stand-ins ----------------------------------------------------------------------
 await db.exec(`
   create role anon nologin; create role authenticated nologin;
+  create schema extensions;
   create schema auth;
   create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}'::jsonb);
   create function auth.uid() returns uuid language sql stable as
@@ -142,7 +144,7 @@ const weekly = JSON.stringify([1, 2, 3, 4, 5].map((d) => ({ weekday: d, start: '
 const overrides = JSON.stringify([{ day: '2026-10-12', kind: 'blocked' }, { day: '2026-10-17', kind: 'open', start: '09:00', end: '12:00' }]);
 const saveSpot = (id, level, sector, number, hour, day, week, weekly = '[]', overrides = '[]') =>
   `select public.save_spot(${id ? `'${id}'` : 'null'}, '${condoId}', '${level}', ${sector ? `'${sector}'` : 'null'}, '${number}',
-     '2,5 × 5,0', 'Perto do elevador', ${hour ?? 'null'}, ${day ?? 'null'}, ${week ?? 'null'}, 120, 24, 'manual',
+     '2,5 × 5,0', 'Perto do elevador', '{coberta}', 210, 'Terceira depois do elevador', ${hour ?? 'null'}, ${day ?? 'null'}, ${week ?? 'null'}, 120, 24, 'manual',
      '{Sem caminhonete,Respeitar horário}', '${weekly}'::jsonb, '${overrides}'::jsonb) as id`;
 const spotId = (await expectOk('create spot B2-14', saveSpot(null, s2.level_id, s2.sector_id, '14', 800, 3500, 18000, weekly, overrides)))?.[0]?.id;
 await expectOk('weekly window saved', 'select count(*)::int n from public.spot_weekly_availability where spot_id = $1', [spotId], (r) => r[0].n === 5 ? null : 'n=' + r[0].n);
@@ -172,6 +174,108 @@ await expectError('member cannot edit someone else\'s spot', saveSpot(spotId, s2
 await expectOk('member creates a spot of their own', saveSpot(null, s1.level_id, s1.sector_id, '4', 700, null, null));
 await as('anon');
 await expectError('anon cannot save spots', saveSpot(null, s2.level_id, s2.sector_id, '30', 900, null, null), [], 'permission denied');
+
+// --- Fase 3 · características e reservas -----------------------------------------------------
+console.log('\n# spot details');
+await as(U1);
+await expectOk('features, height and directions saved', 'select features, height_cm, directions from public.spots where id = $1', [spotId],
+  (r) => r[0].features.join() === 'coberta' && r[0].height_cm === 210 && r[0].directions === 'Terceira depois do elevador' ? null : JSON.stringify(r));
+await expectError('unknown feature', saveSpot(null, s2.level_id, s2.sector_id, '40', 900, null, null).replace("'{coberta}'", "'{piscina}'"), [], '23514');
+await expectOk('old save_spot signature is gone', `select count(*)::int n from pg_proc where proname = 'save_spot'`, [], (r) => r[0].n === 1 ? null : 'n=' + r[0].n);
+
+console.log('\n# bookings');
+// A Monday far enough ahead that "now" never catches up; times in Brasília (-03:00).
+const monday = (() => { const d = new Date(Date.UTC(2030, 9, 7)); while (d.getUTCDay() !== 1) d.setUTCDate(d.getUTCDate() + 1); return d; })();
+const dayAt = (offset, hhmm) => {
+  const d = new Date(monday); d.setUTCDate(d.getUTCDate() + offset);
+  return `${d.toISOString().slice(0, 10)}T${hhmm}:00-03:00`;
+};
+const dateOf = (offset) => dayAt(offset, '00:00').slice(0, 10);
+const s2c = garage.find((g) => g.name === 'Subsolo 2' && g.sector === 'C');
+const s2a = garage.find((g) => g.name === 'Subsolo 2' && g.sector === 'A');
+const createSpot = async (name, { sector, number, hour = null, day = null, approval, min, weekly, overrides = '[]' }) =>
+  (await expectOk(name, `select public.save_spot(null, '${condoId}', '${s2.level_id}', '${sector}', '${number}', null, null,
+      '{}', null, null, ${hour ?? 'null'}, ${day ?? 'null'}, null, ${min}, 24, '${approval}', '{}', '${weekly}'::jsonb, '${overrides}'::jsonb) as id`))?.[0]?.id;
+// Always open, instant booking, hour or day.
+const spotA = await createSpot('spot A: always open, auto', {
+  sector: s2a.sector_id, number: '30', hour: 800, day: 3500, approval: 'auto', min: 120,
+  weekly: JSON.stringify([1, 2, 3, 4, 5, 6, 7].map((d) => ({ weekday: d, start: '00:00', end: '24:00' }))),
+});
+// Weekdays 08–18, approval, hour only; Wednesday blocked, Saturday opened 09–12.
+const spotM = await createSpot('spot M: weekdays, manual', {
+  sector: s2c.sector_id, number: '31', hour: 1000, approval: 'manual', min: 60,
+  weekly: JSON.stringify([1, 2, 3, 4, 5].map((d) => ({ weekday: d, start: '08:00', end: '18:00' }))),
+  overrides: JSON.stringify([{ day: dateOf(2), kind: 'blocked' }, { day: dateOf(5), kind: 'open', start: '09:00', end: '12:00' }]),
+});
+
+const search = (start, end) => `select id, available, is_mine, owner_name, owner_block, weekly from public.search_spots('${condoId}', '${start}', '${end}')`;
+const availableIn = (rows, id) => rows.find((r) => r.id === id)?.available;
+await as(U2);
+let rows = await expectOk('search as member', search(dayAt(0, '09:00'), dayAt(0, '11:00')));
+if (availableIn(rows, spotA) === true && availableIn(rows, spotM) === true) ok('both free on Monday 09–11'); else fail('both free on Monday 09–11', JSON.stringify(rows));
+const a = rows.find((r) => r.id === spotA);
+if (a.owner_name === 'Adam Foerster' && a.owner_block === 'B' && a.is_mine === false && a.weekly.length === 7) ok('owner name/block and weekly rule'); else fail('owner info', JSON.stringify(a));
+if (!rows.some((r) => r.id === spotId)) ok('paused spot is not listed'); else fail('paused spot listed', '');
+rows = await expectOk('search Monday 07–09', search(dayAt(0, '07:00'), dayAt(0, '09:00')));
+if (availableIn(rows, spotM) === false) ok('outside the weekly window'); else fail('outside window', JSON.stringify(rows));
+rows = await expectOk('search Wednesday (blocked)', search(dayAt(2, '09:00'), dayAt(2, '11:00')));
+if (availableIn(rows, spotM) === false) ok('blocked date'); else fail('blocked date', '');
+rows = await expectOk('search Saturday 09–12 (opened date)', search(dayAt(5, '09:00'), dayAt(5, '12:00')));
+if (availableIn(rows, spotM) === true) ok('opened Saturday'); else fail('opened Saturday', '');
+rows = await expectOk('search Saturday 08–12', search(dayAt(5, '08:00'), dayAt(5, '12:00')));
+if (availableIn(rows, spotM) === false) ok('opened Saturday only 09–12'); else fail('opened Saturday window', '');
+rows = await expectOk('search overnight Monday 17 → Tuesday 09', search(dayAt(0, '17:00'), dayAt(1, '09:00')));
+if (availableIn(rows, spotM) === false && availableIn(rows, spotA) === true) ok('overnight needs the night open'); else fail('overnight', JSON.stringify(rows));
+rows = await expectOk('search 30 min', search(dayAt(0, '09:00'), dayAt(0, '09:30')));
+if (availableIn(rows, spotM) === false) ok('below the minimum is not available'); else fail('below minimum', '');
+
+const vehicle = (await db.query('select id from public.vehicles where owner_id = $1', [U2])).rows[0].id;
+const book = (spot, start, end, unit, veh = vehicle) =>
+  `select * from public.request_booking('${spot}', '${start}', '${end}', '${unit}', ${veh ? `'${veh}'` : 'null'}, 'Chego cedo')`;
+const instant = (await expectOk('instant booking Saturday 08 → Sunday 18 (days)', book(spotA, dayAt(5, '08:00'), dayAt(6, '18:00'), 'day'), [],
+  (r) => r[0].status === 'confirmed' && r[0].total_cents === 7000 && Number(r[0].code) >= 1001 ? null : JSON.stringify(r)))?.[0];
+await expectError('overlapping instant booking', book(spotA, dayAt(6, '10:00'), dayAt(6, '12:00'), 'hour'), [], 'spot_unavailable');
+rows = await expectOk('search after the booking', search(dayAt(6, '10:00'), dayAt(6, '12:00')));
+if (availableIn(rows, spotA) === false) ok('booked period is busy'); else fail('booked period busy', '');
+await expectOk('busy ranges for the calendar', `select * from public.spot_busy_ranges('${spotA}', '${dayAt(0, '00:00')}', '${dayAt(7, '00:00')}')`, [],
+  (r) => r.length === 1 ? null : 'rows=' + r.length);
+await expectOk('request with approval is pending', book(spotM, dayAt(0, '09:00'), dayAt(0, '11:00'), 'hour'), [],
+  (r) => r[0].status === 'pending' && r[0].total_cents === 2000 ? null : JSON.stringify(r));
+await expectOk('pending requests do not block each other', book(spotM, dayAt(0, '10:00'), dayAt(0, '12:00'), 'hour'), [],
+  (r) => r[0].status === 'pending' ? null : JSON.stringify(r));
+await expectOk('pending has a response deadline', `select respond_by is not null ok from public.bookings where status = 'pending' limit 1`, [], (r) => r[0].ok ? null : 'no deadline');
+await expectError('below the minimum', book(spotM, dayAt(0, '09:00'), dayAt(0, '09:30'), 'hour'), [], 'below_minimum');
+await expectError('unit not offered', book(spotM, dayAt(0, '09:00'), dayAt(0, '11:00'), 'day'), [], 'unit_not_offered');
+await expectError('outside availability', book(spotM, dayAt(2, '09:00'), dayAt(2, '11:00'), 'hour'), [], 'spot_unavailable');
+await expectError('someone else\'s vehicle', book(spotM, dayAt(3, '09:00'), dayAt(3, '11:00'), 'hour', '00000000-0000-0000-0000-000000000001'), [], 'invalid_vehicle');
+await expectError('period in the past', book(spotA, '2020-01-01T08:00:00-03:00', '2020-01-01T12:00:00-03:00', 'hour'), [], 'invalid_period');
+await expectError('paused spot', book(spotId, dayAt(0, '09:00'), dayAt(0, '11:00'), 'hour'), [], 'spot_unavailable');
+await expectError('direct insert into bookings is blocked', `insert into public.bookings (spot_id, condo_id, owner_id, renter_id, starts_at, ends_at, billing_unit, units, unit_price_cents, total_cents)
+  values ($1, $2, $3, $4, now() + interval '1 day', now() + interval '2 days', 'day', 1, 1, 1)`, [spotA, condoId, U1, U2], 'row-level security');
+await expectOk('renter sees own bookings', 'select count(*)::int n from public.bookings', [], (r) => r[0].n === 3 ? null : 'n=' + r[0].n);
+
+await as(U1);
+await expectError('owner cannot book own spot', book(spotA, dayAt(3, '09:00'), dayAt(3, '11:00'), 'hour', null), [], 'own_spot');
+await expectOk('owner sees requests for their spots', 'select count(*)::int n from public.bookings', [], (r) => r[0].n === 3 ? null : 'n=' + r[0].n);
+await expectOk('owner sees the renter\'s vehicle', 'select plate from public.vehicles where id = $1', [vehicle], (r) => r[0]?.plate === 'ABC1D23' ? null : JSON.stringify(r));
+await expectOk('search marks own spots', search(dayAt(0, '09:00'), dayAt(0, '11:00')), [], (r) => r.find((x) => x.id === spotA)?.is_mine === true ? null : 'not mine');
+
+const U3 = '33333333-3333-3333-3333-333333333333';
+await db.exec(`reset role; insert into auth.users (id, email) values ('${U3}', 'outro@x.com');`);
+await as(U3);
+await expectOk('outsider sees no bookings', 'select * from public.bookings', [], (r) => r.length === 0 ? null : 'rows=' + r.length);
+await expectOk('outsider search is empty', search(dayAt(0, '09:00'), dayAt(0, '11:00')), [], (r) => r.length === 0 ? null : 'rows=' + r.length);
+await expectOk('outsider gets no busy ranges', `select * from public.spot_busy_ranges('${spotA}', '${dayAt(0, '00:00')}', '${dayAt(7, '00:00')}')`, [],
+  (r) => r.length === 0 ? null : 'rows=' + r.length);
+await expectError('outsider cannot book', book(spotA, dayAt(3, '09:00'), dayAt(3, '11:00'), 'hour', null), [], 'spot_unavailable');
+await as('anon');
+await expectError('anon cannot search spots', search(dayAt(0, '09:00'), dayAt(0, '11:00')), [], 'permission denied');
+
+await db.exec('reset role');
+await expectError('exclusion constraint blocks overlapping confirmations', `insert into public.bookings
+  (spot_id, condo_id, owner_id, renter_id, starts_at, ends_at, billing_unit, units, unit_price_cents, total_cents, status)
+  values ('${spotA}', '${condoId}', '${U1}', '${U2}', '${dayAt(6, '09:00')}', '${dayAt(6, '10:00')}', 'hour', 1, 800, 800, 'confirmed')`, [], '23P01');
+if (instant) ok('instant booking code ' + instant.code);
 
 console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL PASSED');
 process.exit(failures ? 1 : 0);

@@ -1,14 +1,15 @@
 package com.adamfoerster.tuavaga.feature.hosting.data
 
-import com.adamfoerster.tuavaga.feature.hosting.domain.ApprovalMode
-import com.adamfoerster.tuavaga.feature.hosting.domain.Availability
-import com.adamfoerster.tuavaga.feature.hosting.domain.DayOverride
-import com.adamfoerster.tuavaga.feature.hosting.domain.Prices
+import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
+import com.adamfoerster.tuavaga.core.domain.spot.Availability
+import com.adamfoerster.tuavaga.core.domain.spot.DayOverride
+import com.adamfoerster.tuavaga.core.domain.spot.Prices
 import com.adamfoerster.tuavaga.feature.hosting.domain.Spot
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotDraft
-import com.adamfoerster.tuavaga.feature.hosting.domain.SpotFormats
+import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
+import com.adamfoerster.tuavaga.core.domain.spot.SpotFormats
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotStatus
-import com.adamfoerster.tuavaga.feature.hosting.domain.TimeWindow
+import com.adamfoerster.tuavaga.core.domain.spot.TimeWindow
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.isoDayNumber
@@ -23,7 +24,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 
 /** Columns selected for a spot, with level, sector and availability embedded. */
-internal const val SPOT_COLUMNS = "id,condo_id,level_id,sector_id,number,size_label,description," +
+internal const val SPOT_COLUMNS = "id,condo_id,level_id,sector_id,number,size_label,description,features,height_cm,directions," +
     "price_hour_cents,price_day_cents,price_week_cents,min_period_minutes,cancel_notice_hours,approval,rules,status," +
     "condo_levels(name),condo_sectors(name)," +
     "spot_weekly_availability(weekday,start_time,end_time),spot_date_overrides(day,kind,start_time,end_time)"
@@ -55,6 +56,9 @@ internal data class SpotDto(
     val number: String,
     @SerialName("size_label") val sizeLabel: String? = null,
     val description: String? = null,
+    val features: List<String> = emptyList(),
+    @SerialName("height_cm") val heightCm: Int? = null,
+    val directions: String? = null,
     @SerialName("price_hour_cents") val priceHourCents: Int? = null,
     @SerialName("price_day_cents") val priceDayCents: Int? = null,
     @SerialName("price_week_cents") val priceWeekCents: Int? = null,
@@ -83,6 +87,9 @@ internal fun SpotDto.toSpot() = Spot(
     number = number,
     sizeLabel = sizeLabel,
     description = description,
+    features = features.mapNotNull { SpotFeature.fromKey(it) }.toSet(),
+    heightCm = heightCm,
+    directions = directions,
     prices = Prices(priceHourCents, priceDayCents, priceWeekCents),
     minPeriodMinutes = minPeriodMinutes,
     cancelNoticeHours = cancelNoticeHours,
@@ -144,6 +151,9 @@ internal fun SpotDraft.toSaveParams(): JsonObject = buildJsonObject {
     put("p_number", number.trim())
     put("p_size_label", sizeLabel?.trim())
     put("p_description", description?.trim())
+    putJsonArray("p_features") { SpotFeature.entries.filter { it in features }.forEach { add(it.key) } }
+    put("p_height_cm", heightCm)
+    put("p_directions", directions?.trim())
     put("p_price_hour_cents", prices.hourCents)
     put("p_price_day_cents", prices.dayCents)
     put("p_price_week_cents", prices.weekCents)

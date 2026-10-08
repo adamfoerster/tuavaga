@@ -5,7 +5,7 @@
 | 0 · Design system Kerb + auth | 0.2.0 | concluída |
 | 1 · Condomínios e cadastro do morador | 0.3.0 | concluída |
 | 2 · Locador: minhas vagas e cadastro de vaga | 0.4.0 | concluída |
-| 3 · Explorar e pedir reserva | 0.5.0 | pendente |
+| 3 · Explorar e pedir reserva | 0.5.0 | concluída |
 | 4 · Ciclo da reserva | 0.6.0 | pendente |
 | 5 · Chat e notificações em tempo real | 0.7.0 | pendente |
 | 6 · Perfil | 0.8.0 | pendente |
@@ -217,6 +217,26 @@ navegação cruzada (ex.: "Enviar solicitação" → detalhe da reserva) é feit
   aguardando aprovação/confirmada.
 - Testes: `PriceCalculator` (espelha `booking_price`, mesmos casos), período mínimo, ViewModels de
   explorar (filtros, troca lista/mapa, troca de condomínio recarrega), detalhe e montar/resumo.
+
+**Como ficou (diferenças em relação ao plano acima)**
+- Duas migrations: `20261010000000_spot_details.sql` (características, pé-direito e "como chegar", que
+  o detalhe e os filtros usam e a fase 2 não gravava — o passo 1 do cadastro de vaga ganhou esses campos)
+  e `20261010000100_bookings.sql`.
+- `btree_gist` no schema `extensions`. Funções com outros nomes: `billing_units` (unidades arredondadas
+  para cima; o valor é preço × unidades), `search_spots` (lista **e** mapa numa chamada só: todas as
+  vagas ativas com `available` e `is_mine`, em vez de `search_available_spots` + `garage_map`) e
+  `spot_busy_ranges` (dias RES do calendário). Filtros (coberta, larga, elétrica, elevador, moto,
+  "até R$ 10/h") são aplicados no app sobre o resultado.
+- `request_booking` devolve (id, code, status, total) e falha com mensagens estáveis
+  (`spot_unavailable`, `own_spot`, `invalid_period`, `invalid_vehicle`, `below_minimum`,
+  `unit_not_offered`), mapeadas para `BookingError`. Veículo é opcional (quem não tem veículo pede sem).
+- Período: as caixas Entrada/Saída abrem uma folha com dia (até 60 dias) e hora (de 30 em 30 min);
+  o padrão é a próxima hora cheia por 2 h. O preço é calculado no app (`Prices.quote`) com a mesma regra.
+- `KbGarageSpot`/`KbSpotLegend` e `KbBottomSheet` entraram no design system; os cartões da lista ficaram
+  no próprio `feature/explore` (sem `KbSpotCard`).
+- "Enviar solicitação" termina numa tela "Pedido enviado"/"Reserva confirmada" com o código; a aba
+  Reservas continua "em breve" até a fase 4.
+- O placeholder de foto do detalhe tem 120 dp (a prancha usa uma foto alta) para sobrar área rolável.
 
 ## Fase 4 — Ciclo da reserva (0.6.0)
 

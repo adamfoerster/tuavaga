@@ -1,9 +1,12 @@
 package com.adamfoerster.tuavaga.feature.hosting.presentation.wizard
 
 import com.adamfoerster.tuavaga.core.designsystem.components.KbDayState
-import com.adamfoerster.tuavaga.feature.hosting.domain.Availability
-import com.adamfoerster.tuavaga.feature.hosting.domain.RepeatFrequency
-import com.adamfoerster.tuavaga.feature.hosting.domain.TimeWindow
+import com.adamfoerster.tuavaga.core.domain.spot.Availability
+import com.adamfoerster.tuavaga.core.domain.spot.RepeatFrequency
+import com.adamfoerster.tuavaga.core.domain.spot.TimeWindow
+import com.adamfoerster.tuavaga.core.presentation.leadingBlanks
+import com.adamfoerster.tuavaga.core.presentation.monthShort
+import com.adamfoerster.tuavaga.core.presentation.monthTitle
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals

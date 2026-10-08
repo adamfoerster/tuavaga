@@ -8,6 +8,33 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-08
+
+### Adicionado
+
+- Migration `20261010000000_spot_details.sql`: características da vaga (coberta, larga, elétrica,
+  elevador, moto), pé-direito e "como chegar"; o cadastro de vaga ganhou esses campos no passo 1.
+- Migration `20261010000100_bookings.sql`: reservas com código sequencial ("Reserva 1001"), trava
+  contra reservas confirmadas sobrepostas, RLS (só locatário e locador leem) e as RPCs `search_spots`,
+  `spot_busy_ranges` e `request_booking` (aprovação automática confirma na hora; manual fica aguardando
+  resposta em até 12 h).
+- Aba Explorar: período de entrada/saída, lista de vagas livres com filtros (coberta, larga, elétrica,
+  elevador, moto, até R$ 10/h), mapa da garagem por andar (livre, ocupada, selecionada, sua vaga) e os
+  estados "Nenhuma vaga livre", sem conexão e "Seja o primeiro".
+- Detalhe da vaga: locador, preços, dimensões, pé-direito, como chegar, regras numeradas, calendário do
+  mês (seu período, reservada, bloqueada) e o valor do período.
+- Pedido de reserva em 2 passos (montar e resumo): forma de cobrança, período, veículo, observações,
+  aceite das regras e envio, terminando em "Pedido enviado" ou "Reserva confirmada".
+- Componentes Kerb `KbGarageSpot`, `KbSpotLegend` e `KbBottomSheet`.
+- Testes das migrations cobrindo reservas: busca, sobreposição, período mínimo, vaga própria, veículo
+  de outro usuário, aprovação automática e acesso de quem não é parte da reserva.
+
+### Alterado
+
+- Disponibilidade, formatos e termos de vaga (preços, forma de cobrança, características) e o fuso do
+  app (`appToday()`/`appNow()`) passaram de `feature/hosting` para `core/domain`, pois o Explorar também
+  os usa.
+
 ## [0.4.1] - 2026-10-08
 
 ### Corrigido

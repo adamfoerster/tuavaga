@@ -1,13 +1,14 @@
 package com.adamfoerster.tuavaga.feature.hosting.presentation.wizard
 
 import com.adamfoerster.tuavaga.core.domain.util.Result
-import com.adamfoerster.tuavaga.feature.hosting.domain.ApprovalMode
-import com.adamfoerster.tuavaga.feature.hosting.domain.Availability
-import com.adamfoerster.tuavaga.feature.hosting.domain.DayAvailability
-import com.adamfoerster.tuavaga.feature.hosting.domain.DayOverride
-import com.adamfoerster.tuavaga.feature.hosting.domain.RepeatFrequency
+import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
+import com.adamfoerster.tuavaga.core.domain.spot.Availability
+import com.adamfoerster.tuavaga.core.domain.spot.DayAvailability
+import com.adamfoerster.tuavaga.core.domain.spot.DayOverride
+import com.adamfoerster.tuavaga.core.domain.spot.RepeatFrequency
+import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotError
-import com.adamfoerster.tuavaga.feature.hosting.domain.TimeWindow
+import com.adamfoerster.tuavaga.core.domain.spot.TimeWindow
 import com.adamfoerster.tuavaga.feature.hosting.presentation.FakeCondos
 import com.adamfoerster.tuavaga.feature.hosting.presentation.FakeHosting
 import com.adamfoerster.tuavaga.feature.hosting.presentation.membership
@@ -117,6 +118,16 @@ class SpotWizardViewModelTest {
     }
 
     @Test
+    fun invalidHeightBlocksTheFirstStep() {
+        val vm = wizard()
+        vm.onAction(SpotWizardAction.OnHeightChange("12"))
+        vm.fillLocation()
+
+        assertEquals(WizardTexts.invalidHeight, vm.state.value.heightError)
+        assertEquals(1, vm.state.value.step)
+    }
+
+    @Test
     fun pricesNeedAtLeastOneValidValue() {
         val vm = wizard()
         vm.fillLocation()
@@ -194,6 +205,10 @@ class SpotWizardViewModelTest {
     @Test
     fun publishSavesTheDraft() = runTest {
         val vm = wizard()
+        vm.onAction(SpotWizardAction.OnFeatureToggle(SpotFeature.ELECTRIC))
+        vm.onAction(SpotWizardAction.OnFeatureToggle(SpotFeature.COVERED))
+        vm.onAction(SpotWizardAction.OnHeightChange("2,10"))
+        vm.onAction(SpotWizardAction.OnDirectionsChange("Desça a rampa"))
         vm.fillLocation()
         vm.onAction(SpotWizardAction.OnApprovalSelect(ApprovalMode.AUTO))
         vm.onAction(SpotWizardAction.OnRuleToggle("Respeitar horário"))
@@ -210,6 +225,9 @@ class SpotWizardViewModelTest {
         assertEquals("s2b", draft.sectorId)
         assertEquals(800, draft.prices.hourCents)
         assertEquals(ApprovalMode.AUTO, draft.approval)
+        assertEquals(setOf(SpotFeature.ELECTRIC, SpotFeature.COVERED), draft.features)
+        assertEquals(210, draft.heightCm)
+        assertEquals("Desça a rampa", draft.directions)
         // Presets keep the chip order; the custom rule goes last.
         assertEquals(listOf("Sem caminhonete", "Respeitar horário", "Avisar quando chegar"), draft.rules)
     }
@@ -244,6 +262,8 @@ class SpotWizardViewModelTest {
         assertEquals("Avisar quando chegar", state.customRule)
         assertEquals(RepeatFrequency.WEEKENDS, state.frequency)
         assertEquals("24:00", state.toText)
+        assertEquals("2,10", state.heightText)
+        assertEquals(setOf(SpotFeature.COVERED), state.features)
 
         vm.onAction(SpotWizardAction.OnNextClick)
         vm.onAction(SpotWizardAction.OnNextClick)

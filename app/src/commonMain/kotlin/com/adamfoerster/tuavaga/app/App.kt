@@ -28,6 +28,8 @@ import com.adamfoerster.tuavaga.core.designsystem.components.KbText
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTone
 import com.adamfoerster.tuavaga.feature.auth.presentation.navigation.AuthGraph
 import com.adamfoerster.tuavaga.feature.auth.presentation.navigation.authGraph
+import com.adamfoerster.tuavaga.feature.explore.presentation.navigation.exploreGraph
+import com.adamfoerster.tuavaga.feature.explore.presentation.navigation.spotDetailRoute
 import com.adamfoerster.tuavaga.feature.hosting.presentation.navigation.SpotWizardRoute
 import com.adamfoerster.tuavaga.feature.hosting.presentation.navigation.hostingGraph
 import com.adamfoerster.tuavaga.feature.onboarding.presentation.navigation.CondoOnboardingGraph
@@ -113,10 +115,12 @@ private fun MainArea() {
                     onAddCondo = { navController.navigate(CondoOnboardingGraph) },
                     onCreateSpot = { condoId -> navController.navigate(SpotWizardRoute(condoId = condoId)) },
                     onEditSpot = { spotId -> navController.navigate(SpotWizardRoute(spotId = spotId)) },
+                    onOpenSpot = { condoId, spotId, period -> navController.navigate(spotDetailRoute(condoId, spotId, period)) },
                 ),
             )
         }
         hostingGraph(navController)
+        exploreGraph(navController, onFinished = { navController.popBackStack(MainRoute, inclusive = false) })
         condoOnboardingGraph(
             navController = navController,
             onFinished = { navController.popBackStack(MainRoute, inclusive = false) },

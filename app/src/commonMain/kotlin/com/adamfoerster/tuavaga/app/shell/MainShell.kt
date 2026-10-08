@@ -17,6 +17,8 @@ import com.adamfoerster.tuavaga.core.designsystem.KerbTheme
 import com.adamfoerster.tuavaga.core.designsystem.components.KbIcons
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTab
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTabBar
+import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
+import com.adamfoerster.tuavaga.feature.explore.presentation.list.ExploreRoot
 import com.adamfoerster.tuavaga.feature.hosting.presentation.myspots.MySpotsRoot
 import com.adamfoerster.tuavaga.feature.profile.presentation.ProfileRoot
 import org.koin.compose.viewmodel.koinViewModel
@@ -35,6 +37,7 @@ class ShellNavigation(
     /** `null` condoId = the active condominium. */
     val onCreateSpot: (condoId: String?) -> Unit,
     val onEditSpot: (spotId: String) -> Unit,
+    val onOpenSpot: (condoId: String, spotId: String, period: BookingPeriod) -> Unit,
 )
 
 @Composable
@@ -68,10 +71,10 @@ fun MainShellScreen(
             CondoSelectorBar(active = state.active, onClick = { onAction(ShellAction.OnOpenSwitcher) })
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when (state.tab) {
-                    MainTab.EXPLORE -> ExplorePlaceholder(active = state.active, onListSpot = createInActiveCondo)
+                    MainTab.EXPLORE -> ExploreRoot(onOpenSpot = navigation.onOpenSpot, onListSpot = createInActiveCondo)
                     MainTab.BOOKINGS -> ComingSoonTab(
                         title = "Reservas",
-                        text = "Suas reservas aparecem aqui quando a busca de vagas chegar.",
+                        text = "Suas reservas e pedidos vão aparecer aqui na próxima versão.",
                     )
                     MainTab.MY_SPOTS -> MySpotsRoot(
                         onCreateSpot = { condoId -> navigation.onCreateSpot(condoId ?: state.active?.condo?.id) },

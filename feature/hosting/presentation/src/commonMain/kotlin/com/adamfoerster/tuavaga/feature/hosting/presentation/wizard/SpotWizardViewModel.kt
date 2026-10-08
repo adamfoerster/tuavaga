@@ -5,16 +5,17 @@ import androidx.lifecycle.viewModelScope
 import com.adamfoerster.tuavaga.core.domain.condo.CondoRepository
 import com.adamfoerster.tuavaga.core.domain.util.Result
 import com.adamfoerster.tuavaga.core.presentation.UiText
+import com.adamfoerster.tuavaga.core.presentation.firstOfMonth
 import com.adamfoerster.tuavaga.core.presentation.toUiText
 import com.adamfoerster.tuavaga.feature.hosting.domain.HostingRepository
 import com.adamfoerster.tuavaga.feature.hosting.domain.PRESET_RULES
-import com.adamfoerster.tuavaga.feature.hosting.domain.Prices
-import com.adamfoerster.tuavaga.feature.hosting.domain.RepeatFrequency
+import com.adamfoerster.tuavaga.core.domain.spot.Prices
+import com.adamfoerster.tuavaga.core.domain.spot.RepeatFrequency
 import com.adamfoerster.tuavaga.feature.hosting.domain.Spot
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotDraft
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotError
-import com.adamfoerster.tuavaga.feature.hosting.domain.SpotFormats
-import com.adamfoerster.tuavaga.feature.hosting.domain.TimeWindow
+import com.adamfoerster.tuavaga.core.domain.spot.SpotFormats
+import com.adamfoerster.tuavaga.core.domain.spot.TimeWindow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,6 +67,11 @@ class SpotWizardViewModel(
             is SpotWizardAction.OnNumberChange -> _state.update { it.copy(number = action.value.take(NUMBER_MAX), numberError = null) }
             is SpotWizardAction.OnSizeChange -> _state.update { it.copy(sizeLabel = action.value.take(SIZE_MAX)) }
             is SpotWizardAction.OnDescriptionChange -> _state.update { it.copy(description = action.value.take(DESCRIPTION_MAX)) }
+            is SpotWizardAction.OnFeatureToggle -> _state.update {
+                it.copy(features = if (action.feature in it.features) it.features - action.feature else it.features + action.feature)
+            }
+            is SpotWizardAction.OnHeightChange -> _state.update { it.copy(heightText = action.value.take(6), heightError = null) }
+            is SpotWizardAction.OnDirectionsChange -> _state.update { it.copy(directions = action.value.take(DIRECTIONS_MAX)) }
 
             is SpotWizardAction.OnPriceHourChange -> _state.update { it.copy(priceHour = action.value, priceError = null) }
             is SpotWizardAction.OnPriceDayChange -> _state.update { it.copy(priceDay = action.value, priceError = null) }
@@ -178,9 +184,11 @@ class SpotWizardViewModel(
             levelError = WizardTexts.levelRequired.takeIf { level == null },
             sectorError = WizardTexts.sectorRequired.takeIf { level != null && level.sectors.isNotEmpty() && s.sectorId == null },
             numberError = WizardTexts.numberRequired.takeIf { s.number.isBlank() },
+            heightError = WizardTexts.invalidHeight.takeIf { s.heightText.isNotBlank() && SpotFormats.parseHeightCm(s.heightText) == null },
         )
         _state.value = checked
-        return s.condoId != null && checked.levelError == null && checked.sectorError == null && checked.numberError == null
+        return s.condoId != null && checked.levelError == null && checked.sectorError == null && checked.numberError == null &&
+            checked.heightError == null
     }
 
     /** The prices typed, or `null` (with the error shown) if none is valid. */
@@ -244,6 +252,9 @@ class SpotWizardViewModel(
             number = s.number.trim(),
             sizeLabel = s.sizeLabel.trim().ifEmpty { null },
             description = s.description.trim().ifEmpty { null },
+            features = s.features,
+            heightCm = s.heightText.takeIf { it.isNotBlank() }?.let { SpotFormats.parseHeightCm(it) },
+            directions = s.directions.trim().ifEmpty { null },
             prices = prices,
             minPeriodMinutes = s.minPeriodMinutes,
             cancelNoticeHours = s.cancelNoticeHours,
@@ -274,14 +285,15 @@ class SpotWizardViewModel(
     }
 }
 
-internal fun LocalDate.firstOfMonth(): LocalDate = LocalDate(year, month, 1)
-
 private fun SpotWizardState.prefilledWith(spot: Spot): SpotWizardState = copy(
     levelId = spot.levelId,
     sectorId = spot.sectorId,
     number = spot.number,
     sizeLabel = spot.sizeLabel.orEmpty(),
     description = spot.description.orEmpty(),
+    features = spot.features,
+    heightText = spot.heightCm?.let { SpotFormats.formatHeight(it) }.orEmpty(),
+    directions = spot.directions.orEmpty(),
     priceHour = spot.prices.hourCents?.let { SpotFormats.formatPriceInput(it) }.orEmpty(),
     priceDay = spot.prices.dayCents?.let { SpotFormats.formatPriceInput(it) }.orEmpty(),
     priceWeek = spot.prices.weekCents?.let { SpotFormats.formatPriceInput(it) }.orEmpty(),
@@ -302,6 +314,7 @@ internal object WizardTexts {
     val levelRequired = UiText.Dynamic("Escolha o subsolo ou andar.")
     val sectorRequired = UiText.Dynamic("Escolha o setor.")
     val numberRequired = UiText.Dynamic("Informe o número da vaga.")
+    val invalidHeight = UiText.Dynamic("Pé-direito em metros, entre 1,50 e 5,00.")
     val duplicateNumber = UiText.Dynamic("Já existe uma vaga com esse número neste andar e setor.")
     val priceRequired = UiText.Dynamic("Informe pelo menos um valor: hora, dia ou semana.")
     val invalidPrice = UiText.Dynamic("Valor inválido. Use o formato 8,00.")

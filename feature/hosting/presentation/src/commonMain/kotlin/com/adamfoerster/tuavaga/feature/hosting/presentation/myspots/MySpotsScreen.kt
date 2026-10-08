@@ -30,7 +30,7 @@ import com.adamfoerster.tuavaga.core.designsystem.components.KbText
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTone
 import com.adamfoerster.tuavaga.core.designsystem.components.KbToolbar
 import com.adamfoerster.tuavaga.feature.hosting.domain.Spot
-import com.adamfoerster.tuavaga.feature.hosting.domain.SpotFormats
+import com.adamfoerster.tuavaga.core.domain.spot.SpotFormats
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotStatus
 import org.koin.compose.viewmodel.koinViewModel
 

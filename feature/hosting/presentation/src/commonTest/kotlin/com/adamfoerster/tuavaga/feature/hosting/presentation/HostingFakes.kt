@@ -13,10 +13,11 @@ import com.adamfoerster.tuavaga.core.domain.condo.ResidentInfo
 import com.adamfoerster.tuavaga.core.domain.util.DataError
 import com.adamfoerster.tuavaga.core.domain.util.EmptyResult
 import com.adamfoerster.tuavaga.core.domain.util.Result
-import com.adamfoerster.tuavaga.feature.hosting.domain.ApprovalMode
-import com.adamfoerster.tuavaga.feature.hosting.domain.Availability
+import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
+import com.adamfoerster.tuavaga.core.domain.spot.Availability
 import com.adamfoerster.tuavaga.feature.hosting.domain.HostingRepository
-import com.adamfoerster.tuavaga.feature.hosting.domain.Prices
+import com.adamfoerster.tuavaga.core.domain.spot.Prices
+import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
 import com.adamfoerster.tuavaga.feature.hosting.domain.Spot
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotDraft
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotError
@@ -44,7 +45,8 @@ fun spot(
     availability: Availability = Availability(),
 ) = Spot(
     id = id, condoId = condoId, levelId = "s2", levelName = "Subsolo 2", sectorId = "s2b", sectorName = "B",
-    number = "14", sizeLabel = "2,5 × 5,0", description = "Perto do elevador", prices = Prices(hourCents = 800, dayCents = 3500),
+    number = "14", sizeLabel = "2,5 × 5,0", description = "Perto do elevador",
+    features = setOf(SpotFeature.COVERED), heightCm = 210, directions = "Terceira depois do elevador", prices = Prices(hourCents = 800, dayCents = 3500),
     minPeriodMinutes = 120, cancelNoticeHours = 24, approval = ApprovalMode.MANUAL,
     rules = listOf("Sem caminhonete", "Avisar quando chegar"), status = status, availability = availability,
 )

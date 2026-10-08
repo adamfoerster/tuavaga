@@ -36,13 +36,17 @@ import com.adamfoerster.tuavaga.core.designsystem.components.KbStepHeader
 import com.adamfoerster.tuavaga.core.designsystem.components.KbText
 import com.adamfoerster.tuavaga.core.designsystem.components.KbToolbar
 import com.adamfoerster.tuavaga.core.presentation.ObserveAsEvents
-import com.adamfoerster.tuavaga.feature.hosting.domain.ApprovalMode
+import com.adamfoerster.tuavaga.core.presentation.leadingBlanks
+import com.adamfoerster.tuavaga.core.presentation.monthShort
+import com.adamfoerster.tuavaga.core.presentation.monthTitle
+import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
 import com.adamfoerster.tuavaga.feature.hosting.domain.CANCEL_NOTICE_OPTIONS
 import com.adamfoerster.tuavaga.feature.hosting.domain.MIN_PERIOD_OPTIONS
 import com.adamfoerster.tuavaga.feature.hosting.domain.PRESET_RULES
-import com.adamfoerster.tuavaga.feature.hosting.domain.RepeatFrequency
-import com.adamfoerster.tuavaga.feature.hosting.domain.SpotFormats
-import com.adamfoerster.tuavaga.feature.hosting.domain.spotCode
+import com.adamfoerster.tuavaga.core.domain.spot.RepeatFrequency
+import com.adamfoerster.tuavaga.core.domain.spot.SpotFormats
+import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
+import com.adamfoerster.tuavaga.core.domain.spot.spotCode
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
@@ -145,6 +149,7 @@ private fun Hint(text: String) {
 
 // --- Step 1 · board 13 -----------------------------------------------------------------------
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LocationStep(state: SpotWizardState, onAction: (SpotWizardAction) -> Unit) {
     KbText(if (state.isEditing) "Editar vaga" else "Onde fica a vaga", KerbTheme.typography.lg)
@@ -204,6 +209,37 @@ private fun LocationStep(state: SpotWizardState, onAction: (SpotWizardAction) ->
         placeholder = "Ex.: perto do elevador",
         unit = "${state.description.length}/$DESCRIPTION_MAX",
         hint = "Máximo de $DESCRIPTION_MAX caracteres.",
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Label("Características")
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SpotFeature.entries.forEach { feature ->
+                KbChip(
+                    text = feature.label,
+                    selected = feature in state.features,
+                    onClick = { onAction(SpotWizardAction.OnFeatureToggle(feature)) },
+                )
+            }
+        }
+        Hint("Aparecem como etiquetas e filtros para quem procura vaga. \"Moto\" indica vaga de moto.")
+    }
+    KbField(
+        value = state.heightText,
+        onValueChange = { onAction(SpotWizardAction.OnHeightChange(it)) },
+        label = "Pé-direito",
+        placeholder = "2,10",
+        unit = "m",
+        hint = "Opcional. Altura livre até o teto.",
+        error = state.heightError?.asString(),
+        keyboardType = KeyboardType.Decimal,
+    )
+    KbField(
+        value = state.directions,
+        onValueChange = { onAction(SpotWizardAction.OnDirectionsChange(it)) },
+        label = "Como chegar",
+        placeholder = "Desça a rampa até o subsolo 2…",
+        unit = "${state.directions.length}/$DIRECTIONS_MAX",
+        singleLine = false,
     )
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Label("Fotos de como chegar · em breve")

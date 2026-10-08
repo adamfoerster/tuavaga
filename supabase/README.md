@@ -9,6 +9,8 @@ Rode as migrations **em ordem** no SQL Editor do projeto (ou `supabase db push` 
 | `20261007000000_profiles.sql` | `public.profiles` com RLS e o trigger que preenche o perfil no cadastro |
 | `20261008000000_condominiums.sql` | condomínios, andares/setores da garagem, vínculos (`memberships`), veículos, RLS e as RPCs `search_condominiums`, `find_condominium_by_invite`, `condominium_blocks`, `join_condominium`, `create_condominium` |
 | `20261009000000_spots.sql` | vagas (`spots`), janela semanal (`spot_weekly_availability`), exceções por data (`spot_date_overrides`), RLS e as RPCs `save_spot` e `set_spot_status`; a busca e o convite passam a contar as vagas ativas |
+| `20261010000000_spot_details.sql` | características (`features`), pé-direito (`height_cm`) e "como chegar" (`directions`) da vaga; `save_spot` passa a recebê-los |
+| `20261010000100_bookings.sql` | extensão `btree_gist`, reservas (`bookings`) com código sequencial e trava contra sobreposição, RLS e as RPCs `search_spots`, `spot_busy_ranges` e `request_booking` |
 
 Regras da fase de condomínios:
 
@@ -26,6 +28,21 @@ Regras da fase de vagas:
 - Vaga só é criada ou editada por `save_spot`, que confere o vínculo com o condomínio e se andar e setor
   são dele; a edição substitui a disponibilidade inteira. Pausar/reativar é `set_spot_status`.
 - Um número por andar/setor (`spots_place_unique`); pelo menos um preço (hora, dia ou semana).
+
+Regras da fase de reservas (pedido):
+
+- `btree_gist` é criada no schema `extensions` (já existe no Supabase); se o painel recusar, habilite-a
+  em **Database → Extensions** e rode a migration de novo.
+- Reserva só nasce por `request_booking`, que confere vínculo, vaga ativa, que a vaga não é sua, veículo
+  do solicitante, entrada no futuro, período mínimo, forma de cobrança oferecida e disponibilidade
+  (janelas semanais, exceções e reservas confirmadas). O valor é calculado no banco (unidades
+  arredondadas para cima). Erros chegam como mensagem: `spot_unavailable`, `own_spot`, `invalid_period`,
+  `invalid_vehicle`, `below_minimum`, `unit_not_offered`.
+- Vaga com aprovação automática vira `confirmed` na hora; manual fica `pending` com `respond_by` em 12 h.
+- Duas reservas `confirmed`/`in_progress` da mesma vaga nunca se sobrepõem (`bookings_no_overlap`);
+  pedidos pendentes podem conflitar até o locador decidir (fase 4).
+- Só locatário e locador leem a reserva; o locador também vê o veículo dela. `spot_busy_ranges` só
+  devolve os horários ocupados, sem dizer quem reservou.
 
 ### Testes das migrations
 

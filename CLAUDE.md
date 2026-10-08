@@ -45,8 +45,8 @@ Uma alteração só está pronta quando cumpre **todos** os itens abaixo, na mes
   e rótulos ficam em caixa alta (o `KbText` faz isso). Estado sempre com palavra, nunca só cor.
 - **Fases do design**: o plano de implementação por fases (com as migrations Supabase de cada uma) está
   em `docs/plano-design.md`; siga a ordem e atualize-o ao concluir uma fase.
-- **Datas**: `kotlinx-datetime`. "Hoje" do app usa o fuso fixo UTC−3 (`APP_TIME_ZONE` em
-  `feature/hosting/presentation/di`); nunca `TimeZone.of("America/Sao_Paulo")` — na web (wasmJs) não há
+- **Datas**: `kotlinx-datetime`. "Hoje" do app usa o fuso fixo UTC−3 (`APP_TIME_ZONE`, `appToday()`,
+  `appNow()` em `core/domain/time/AppTime.kt`); nunca `TimeZone.of("America/Sao_Paulo")` — na web (wasmJs) não há
   base de fusos e o app quebra. Preços em centavos (`Int`), horários em minutos desde a meia-noite.
 - **Segredos**: só em `local.properties` / variáveis de ambiente, lidos via BuildKonfig (`AppConfig`).
   Nunca use a `service_role` key no app.
@@ -114,4 +114,7 @@ Uma alteração só está pronta quando cumpre **todos** os itens abaixo, na mes
   e confira o diff antes de seguir.
 - Não use crases dentro de `node -e "..."` no bash: elas viram substituição de comando. Para editar
   texto com crases (Markdown, SQL), use as ferramentas de edição de arquivo.
+- Não edite SQL com `.replace` do JavaScript: no texto de substituição `$$` vira `$` e quebra os
+  corpos de função (`as $$ … $$`). Use as ferramentas de edição de arquivo.
+- Não há `python` no Windows deste projeto (o alias abre a Microsoft Store).
 - Heredocs longos no Bash às vezes quebram; prefira as ferramentas de escrita de arquivo.

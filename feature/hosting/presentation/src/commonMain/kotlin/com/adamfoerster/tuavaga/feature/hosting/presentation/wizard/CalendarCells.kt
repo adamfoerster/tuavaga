@@ -2,31 +2,14 @@ package com.adamfoerster.tuavaga.feature.hosting.presentation.wizard
 
 import com.adamfoerster.tuavaga.core.designsystem.components.KbDayCell
 import com.adamfoerster.tuavaga.core.designsystem.components.KbDayState
-import com.adamfoerster.tuavaga.feature.hosting.domain.Availability
-import com.adamfoerster.tuavaga.feature.hosting.domain.DayAvailability
-import com.adamfoerster.tuavaga.feature.hosting.domain.SpotFormats
+import com.adamfoerster.tuavaga.core.domain.spot.Availability
+import com.adamfoerster.tuavaga.core.domain.spot.DayAvailability
+import com.adamfoerster.tuavaga.core.domain.spot.SpotFormats
+import com.adamfoerster.tuavaga.core.presentation.firstOfMonth
+import com.adamfoerster.tuavaga.core.presentation.namePt
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.Month
-import kotlinx.datetime.isoDayNumber
-import kotlinx.datetime.number
 import kotlinx.datetime.plus
-
-private val monthNames = listOf(
-    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
-    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
-)
-
-fun Month.namePt(): String = monthNames[number - 1]
-
-/** "Outubro 2026". */
-fun LocalDate.monthTitle(): String = "${month.namePt().replaceFirstChar { it.uppercase() }} $year"
-
-/** "SET" */
-fun LocalDate.monthShort(): String = month.namePt().take(3).uppercase()
-
-/** Empty cells before day 1 in a Monday-first grid. */
-fun LocalDate.leadingBlanks(): Int = firstOfMonth().dayOfWeek.isoDayNumber - 1
 
 /** Days of [month]'s month as calendar cells: past, selected, blocked, free or closed, plus "HOJE". */
 fun calendarCells(

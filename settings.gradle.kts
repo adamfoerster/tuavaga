@@ -43,6 +43,10 @@ include(":feature:auth:domain")
 include(":feature:auth:data")
 include(":feature:auth:presentation")
 
+include(":feature:explore:domain")
+include(":feature:explore:data")
+include(":feature:explore:presentation")
+
 include(":feature:hosting:domain")
 include(":feature:hosting:data")
 include(":feature:hosting:presentation")

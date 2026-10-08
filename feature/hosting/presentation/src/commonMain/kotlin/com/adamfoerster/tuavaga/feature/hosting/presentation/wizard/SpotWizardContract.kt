@@ -2,9 +2,10 @@ package com.adamfoerster.tuavaga.feature.hosting.presentation.wizard
 
 import com.adamfoerster.tuavaga.core.domain.condo.GarageLevel
 import com.adamfoerster.tuavaga.core.presentation.UiText
-import com.adamfoerster.tuavaga.feature.hosting.domain.ApprovalMode
-import com.adamfoerster.tuavaga.feature.hosting.domain.Availability
-import com.adamfoerster.tuavaga.feature.hosting.domain.RepeatFrequency
+import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
+import com.adamfoerster.tuavaga.core.domain.spot.Availability
+import com.adamfoerster.tuavaga.core.domain.spot.RepeatFrequency
+import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 
@@ -27,6 +28,11 @@ data class SpotWizardState(
     val number: String = "",
     val sizeLabel: String = "",
     val description: String = "",
+    val features: Set<SpotFeature> = emptySet(),
+    /** Ceiling height in meters as typed ("2,10"); optional. */
+    val heightText: String = "",
+    val directions: String = "",
+    val heightError: UiText? = null,
     val levelError: UiText? = null,
     val sectorError: UiText? = null,
     val numberError: UiText? = null,
@@ -73,6 +79,9 @@ sealed interface SpotWizardAction {
     data class OnNumberChange(val value: String) : SpotWizardAction
     data class OnSizeChange(val value: String) : SpotWizardAction
     data class OnDescriptionChange(val value: String) : SpotWizardAction
+    data class OnFeatureToggle(val feature: SpotFeature) : SpotWizardAction
+    data class OnHeightChange(val value: String) : SpotWizardAction
+    data class OnDirectionsChange(val value: String) : SpotWizardAction
 
     data class OnPriceHourChange(val value: String) : SpotWizardAction
     data class OnPriceDayChange(val value: String) : SpotWizardAction
@@ -104,3 +113,4 @@ const val DESCRIPTION_MAX = 40
 const val SIZE_MAX = 20
 const val NUMBER_MAX = 6
 const val CUSTOM_RULE_MAX = 60
+const val DIRECTIONS_MAX = 200

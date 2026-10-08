@@ -4,10 +4,11 @@ App de aluguel de vagas de garagem em condomínio. Kotlin Multiplatform + Compos
 para **Android**, **iOS** e **Web (wasmJs)**, com **Supabase** (Postgres + Auth) no backend e **Room**
 para estado local em todos os targets.
 
-> Estado atual (fase 2 do design): autenticação, introdução, entrar/criar condomínio, cadastro do
-> morador e veículos, seletor e troca de condomínio, tab bar e, para quem aluga, "Minhas vagas" com o
-> cadastro de vaga em 3 passos (localização, preço e regras, disponibilidade), tudo no design system
-> Kerb. As próximas fases estão em [docs/plano-design.md](docs/plano-design.md).
+> Estado atual (fase 3 do design): autenticação, introdução, entrar/criar condomínio, cadastro do
+> morador e veículos, seletor e troca de condomínio, tab bar, "Minhas vagas" com o cadastro de vaga em
+> 3 passos (localização, preço e regras, disponibilidade) e o Explorar: lista e mapa da garagem por
+> período, detalhe da vaga com calendário e o pedido de reserva (montar → resumo → enviado), tudo no
+> design system Kerb. As próximas fases estão em [docs/plano-design.md](docs/plano-design.md).
 
 ## Configuração
 
@@ -47,12 +48,13 @@ build-logic/convention      convention plugins (tuavaga.kmp.library / .compose /
 app                         KMP: App() raiz, áreas de navegação, shell (seletor de condomínio + tab bar), Koin, entry points
 androidApp                  Application Android (AGP 9 não permite KMP no módulo de app)
 iosApp                      projeto Xcode
-core/domain                 Result/DataError, User, sessão, condomínios (Membership, CondoRepository), veículos, BrFormats
+core/domain                 Result/DataError, User, sessão, condomínios, veículos, BrFormats, termos e disponibilidade de vaga, fuso do app (AppTime)
 core/data                   cliente Supabase, repositórios de sessão/condomínios/veículos, BuildKonfig (AppConfig)
 core/database               Room 3: TuaVagaDatabase, DAOs, drivers por plataforma, worker SQLite web
-core/presentation           UiText, ObserveAsEvents
+core/presentation           UiText, ObserveAsEvents, datas em português (DateTexts)
 core/design-system          Kerb: tema escuro/claro, fontes (Barlow, Barlow Condensed, JetBrains Mono) e componentes Kb*
 feature/auth/{domain,data,presentation}   login, cadastro, confirmação, recuperação de senha
+feature/explore/{domain,data,presentation}   Explorar: lista/mapa por período, detalhe da vaga, pedido de reserva
 feature/hosting/{domain,data,presentation}   locador: Minhas vagas, cadastro/edição de vaga, disponibilidade
 feature/onboarding/presentation   introdução, entrar/criar condomínio, cadastro do morador e veículos
 feature/profile/presentation      aba Perfil (por ora: identidade e "Sair da conta")
