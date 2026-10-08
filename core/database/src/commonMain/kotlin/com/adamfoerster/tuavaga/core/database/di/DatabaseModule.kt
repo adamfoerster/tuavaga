@@ -21,4 +21,5 @@ val databaseModule = module {
     single { get<TuaVagaDatabase>().userDao() }
     single { get<TuaVagaDatabase>().appPrefsDao() }
     single { get<TuaVagaDatabase>().membershipDao() }
+    single { get<TuaVagaDatabase>().bookingCacheDao() }
 }

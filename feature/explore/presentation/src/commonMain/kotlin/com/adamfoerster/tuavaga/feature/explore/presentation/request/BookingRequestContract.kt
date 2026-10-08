@@ -1,13 +1,13 @@
 package com.adamfoerster.tuavaga.feature.explore.presentation.request
 
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.booking.BookingQuote
+import com.adamfoerster.tuavaga.core.domain.booking.quote
 import com.adamfoerster.tuavaga.core.domain.spot.BillingUnit
 import com.adamfoerster.tuavaga.core.domain.vehicle.Vehicle
 import com.adamfoerster.tuavaga.core.presentation.UiText
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingConfirmation
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingQuote
 import com.adamfoerster.tuavaga.feature.explore.domain.SpotListing
-import com.adamfoerster.tuavaga.feature.explore.domain.quote
 
 /** Board 08 (form), board 09 (summary), then the confirmation of board 17. */
 enum class RequestStep { FORM, SUMMARY, DONE }
@@ -50,6 +50,7 @@ sealed interface BookingRequestAction {
     data object OnSendClick : BookingRequestAction
     data object OnRetry : BookingRequestAction
     data object OnDoneClick : BookingRequestAction
+    data object OnViewBookingClick : BookingRequestAction
 }
 
 sealed interface BookingRequestEvent {
@@ -58,6 +59,9 @@ sealed interface BookingRequestEvent {
 
     /** Booked (or requested); back to the main screens. */
     data object Finished : BookingRequestEvent
+
+    /** Booked: open the new booking (board 18 "Ver reserva"). */
+    data class ViewBooking(val bookingId: String) : BookingRequestEvent
 }
 
 const val NOTE_MAX = 280

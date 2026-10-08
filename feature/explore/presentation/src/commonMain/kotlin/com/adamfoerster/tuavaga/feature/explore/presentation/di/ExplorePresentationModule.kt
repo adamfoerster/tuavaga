@@ -1,8 +1,8 @@
 package com.adamfoerster.tuavaga.feature.explore.presentation.di
 
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
 import com.adamfoerster.tuavaga.core.domain.time.appNow
 import com.adamfoerster.tuavaga.core.domain.time.appToday
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
 import com.adamfoerster.tuavaga.feature.explore.presentation.detail.SpotDetailViewModel
 import com.adamfoerster.tuavaga.feature.explore.presentation.list.ExploreViewModel
 import com.adamfoerster.tuavaga.feature.explore.presentation.request.BookingRequestViewModel

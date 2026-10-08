@@ -2,15 +2,15 @@ package com.adamfoerster.tuavaga.feature.explore.presentation.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.booking.quote
+import com.adamfoerster.tuavaga.core.domain.booking.suggestedUnit
 import com.adamfoerster.tuavaga.core.domain.condo.CondoRepository
 import com.adamfoerster.tuavaga.core.domain.util.Result
 import com.adamfoerster.tuavaga.core.presentation.UiText
 import com.adamfoerster.tuavaga.core.presentation.firstOfMonth
 import com.adamfoerster.tuavaga.core.presentation.toUiText
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
 import com.adamfoerster.tuavaga.feature.explore.domain.ExploreRepository
-import com.adamfoerster.tuavaga.feature.explore.domain.quote
-import com.adamfoerster.tuavaga.feature.explore.domain.suggestedUnit
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -2,6 +2,8 @@ package com.adamfoerster.tuavaga.feature.hosting.presentation.myspots
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.adamfoerster.tuavaga.core.domain.booking.BookingRepository
+import com.adamfoerster.tuavaga.core.domain.booking.BookingRole
 import com.adamfoerster.tuavaga.core.domain.condo.CondoRepository
 import com.adamfoerster.tuavaga.core.domain.util.Result
 import com.adamfoerster.tuavaga.core.presentation.toUiText
@@ -13,27 +15,45 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 
-/** Board 12 · Minhas vagas: the user's spots grouped by condominium, with pause / reactivate. */
+/**
+ * Board 12 · Minhas vagas: the user's spots grouped by condominium, with pause / reactivate, the
+ * month's earnings and the requests waiting for an answer.
+ */
 class MySpotsViewModel(
     private val hostingRepository: HostingRepository,
     private val condoRepository: CondoRepository,
+    private val bookingRepository: BookingRepository,
+    today: () -> LocalDate,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(MySpotsState())
+    private val _state = MutableStateFlow(MySpotsState(today = today()))
     val state = _state.asStateFlow()
 
     private var loadJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            bookingRepository.bookings.collect { all ->
+                _state.update { it.copy(ownerBookings = all.filter { b -> b.role == BookingRole.OWNER }) }
+            }
+        }
+    }
 
     fun onAction(action: MySpotsAction) {
         when (action) {
             MySpotsAction.OnRefresh -> refresh()
             is MySpotsAction.OnToggleStatus -> toggle(action.spotId)
-            is MySpotsAction.OnCreateSpot, is MySpotsAction.OnEditSpot, MySpotsAction.OnWantSpotClick -> Unit
+            is MySpotsAction.OnCreateSpot, is MySpotsAction.OnEditSpot, is MySpotsAction.OnAgendaClick,
+            MySpotsAction.OnRequestsClick, MySpotsAction.OnWantSpotClick,
+            -> Unit
         }
     }
 
     private fun refresh() {
+        // Earnings and requests come from the bookings cache; a failed reload keeps the cached numbers.
+        viewModelScope.launch { bookingRepository.refresh() }
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }

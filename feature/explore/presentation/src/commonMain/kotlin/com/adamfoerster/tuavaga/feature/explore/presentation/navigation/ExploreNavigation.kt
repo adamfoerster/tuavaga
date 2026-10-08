@@ -4,7 +4,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
 import com.adamfoerster.tuavaga.feature.explore.presentation.detail.SpotDetailRoot
 import com.adamfoerster.tuavaga.feature.explore.presentation.detail.SpotDetailViewModel
 import com.adamfoerster.tuavaga.feature.explore.presentation.request.BookingRequestRoot
@@ -29,8 +29,13 @@ private fun period(start: String, end: String) = BookingPeriod(LocalDateTime.par
 /**
  * Spot detail and booking request (boards 07–09).
  * @param onFinished a booking was sent; the caller goes back to the main screens.
+ * @param onViewBooking a booking was sent and the user wants to see it (booking detail, another feature).
  */
-fun NavGraphBuilder.exploreGraph(navController: NavController, onFinished: () -> Unit) {
+fun NavGraphBuilder.exploreGraph(
+    navController: NavController,
+    onFinished: () -> Unit,
+    onViewBooking: (bookingId: String) -> Unit,
+) {
     composable<SpotDetailRoute> { entry ->
         val route = entry.toRoute<SpotDetailRoute>()
         val viewModel = koinViewModel<SpotDetailViewModel> {
@@ -53,6 +58,7 @@ fun NavGraphBuilder.exploreGraph(navController: NavController, onFinished: () ->
             viewModel = viewModel,
             onExit = { navController.navigateUp() },
             onFinished = onFinished,
+            onViewBooking = onViewBooking,
         )
     }
 }

@@ -31,34 +31,36 @@ import com.adamfoerster.tuavaga.core.designsystem.components.KbTag
 import com.adamfoerster.tuavaga.core.designsystem.components.KbText
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTone
 import com.adamfoerster.tuavaga.core.designsystem.components.KbToolbar
+import com.adamfoerster.tuavaga.core.domain.booking.BookingStatus
 import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
 import com.adamfoerster.tuavaga.core.domain.spot.SpotFormats
+import com.adamfoerster.tuavaga.core.domain.user.shortName
 import com.adamfoerster.tuavaga.core.domain.vehicle.Vehicle
 import com.adamfoerster.tuavaga.core.domain.vehicle.VehicleType
 import com.adamfoerster.tuavaga.core.presentation.ObserveAsEvents
+import com.adamfoerster.tuavaga.core.presentation.breakdown
+import com.adamfoerster.tuavaga.core.presentation.durationLabel
+import com.adamfoerster.tuavaga.core.presentation.formatMoney
 import com.adamfoerster.tuavaga.core.presentation.full
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingStatus
+import com.adamfoerster.tuavaga.core.presentation.label
+import com.adamfoerster.tuavaga.core.presentation.unitsLabel
 import com.adamfoerster.tuavaga.feature.explore.domain.SpotListing
-import com.adamfoerster.tuavaga.feature.explore.domain.shortName
 import com.adamfoerster.tuavaga.feature.explore.presentation.common.PeriodFields
 import com.adamfoerster.tuavaga.feature.explore.presentation.common.PeriodSheet
-import com.adamfoerster.tuavaga.feature.explore.presentation.common.breakdown
-import com.adamfoerster.tuavaga.feature.explore.presentation.common.durationLabel
-import com.adamfoerster.tuavaga.feature.explore.presentation.common.formatMoney
-import com.adamfoerster.tuavaga.feature.explore.presentation.common.label
-import com.adamfoerster.tuavaga.feature.explore.presentation.common.unitsLabel
 
 @Composable
 fun BookingRequestRoot(
     viewModel: BookingRequestViewModel,
     onExit: () -> Unit,
     onFinished: () -> Unit,
+    onViewBooking: (bookingId: String) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             BookingRequestEvent.Exit -> onExit()
             BookingRequestEvent.Finished -> onFinished()
+            is BookingRequestEvent.ViewBooking -> onViewBooking(event.bookingId)
         }
     }
     Box(modifier = Modifier.fillMaxSize()) {
@@ -291,9 +293,15 @@ private fun DoneStep(state: BookingRequestState, onAction: (BookingRequestAction
         showZebra = true,
         bottomBar = {
             KbButton(
+                text = "Ver reserva",
+                onClick = { onAction(BookingRequestAction.OnViewBookingClick) },
+                size = KbButtonSize.Large,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            KbButton(
                 text = "Voltar ao Explorar",
                 onClick = { onAction(BookingRequestAction.OnDoneClick) },
-                size = KbButtonSize.Large,
+                variant = KbButtonVariant.Ghost,
                 modifier = Modifier.fillMaxWidth(),
             )
         },
@@ -319,7 +327,7 @@ private fun DoneStep(state: BookingRequestState, onAction: (BookingRequestAction
             }
         }
         KbText(
-            "Suas reservas vão aparecer na aba Reservas na próxima versão.",
+            "A reserva fica na aba Reservas, com check-in, check-out e cancelamento.",
             typography.bodySmall,
             color = KerbTheme.colors.inkMuted,
         )

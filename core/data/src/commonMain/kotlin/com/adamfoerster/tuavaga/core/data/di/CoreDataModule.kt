@@ -1,5 +1,6 @@
 package com.adamfoerster.tuavaga.core.data.di
 
+import com.adamfoerster.tuavaga.core.data.booking.SupabaseBookingRepository
 import com.adamfoerster.tuavaga.core.data.condo.SupabaseCondoRepository
 import com.adamfoerster.tuavaga.core.data.prefs.RoomActiveCondoRepository
 import com.adamfoerster.tuavaga.core.data.prefs.RoomAppPreferencesRepository
@@ -7,6 +8,7 @@ import com.adamfoerster.tuavaga.core.data.session.SupabaseSessionRepository
 import com.adamfoerster.tuavaga.core.data.supabase.RoomSessionManager
 import com.adamfoerster.tuavaga.core.data.supabase.SupabaseClientFactory
 import com.adamfoerster.tuavaga.core.data.vehicle.SupabaseVehicleRepository
+import com.adamfoerster.tuavaga.core.domain.booking.BookingRepository
 import com.adamfoerster.tuavaga.core.domain.condo.ActiveCondoRepository
 import com.adamfoerster.tuavaga.core.domain.condo.CondoRepository
 import com.adamfoerster.tuavaga.core.domain.prefs.AppPreferencesRepository
@@ -31,4 +33,5 @@ val coreDataModule = module {
     single { RoomActiveCondoRepository(get()) } bind ActiveCondoRepository::class
     single { SupabaseCondoRepository(get(), get(), get()) } bind CondoRepository::class
     single { SupabaseVehicleRepository(get()) } bind VehicleRepository::class
+    single { SupabaseBookingRepository(get(), get(), get()) } bind BookingRepository::class
 }

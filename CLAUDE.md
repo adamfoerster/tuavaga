@@ -43,6 +43,7 @@ Uma alteração só está pronta quando cumpre **todos** os itens abaixo, na mes
 - **UI**: design system **Kerb** (`core/design-system`, a partir de `tuavaga.html`). Use os componentes `Kb*`
   e os tokens de `KerbTheme` (cores, tipografia); nunca cores, fontes ou formas soltas. Textos de UI em display
   e rótulos ficam em caixa alta (o `KbText` faz isso). Estado sempre com palavra, nunca só cor.
+  Nomes abreviados ("Marina R.", `shortName`) nunca fecham frase — senão aparece "Marina R..".
 - **Fases do design**: o plano de implementação por fases (com as migrations Supabase de cada uma) está
   em `docs/plano-design.md`; siga a ordem e atualize-o ao concluir uma fase.
 - **Datas**: `kotlinx-datetime`. "Hoje" do app usa o fuso fixo UTC−3 (`APP_TIME_ZONE`, `appToday()`,
@@ -81,6 +82,11 @@ Uma alteração só está pronta quando cumpre **todos** os itens abaixo, na mes
 
 - Debounce/tempo: `Dispatchers.setMain(StandardTestDispatcher())`; o `runTest` reaproveita o scheduler
   do Main, então use `advanceTimeBy` / `advanceUntilIdle`. Sem tempo envolvido, `UnconfinedTestDispatcher`.
+- Relógio: ViewModels recebem `now: () -> LocalDateTime` / `today: () -> LocalDate` (no Koin, `appNow()` /
+  `appToday()`). Atualização periódica vem da tela (`LaunchedEffect` com `delay` mandando uma ação
+  `OnTick`), nunca de um laço `while (true) { delay() }` no ViewModel, que trava o `runTest`.
+- Reservas: `BookingRepository` fica em `core`; cada módulo que o usa tem seu `FakeBookings` no
+  `commonTest`, que muda a lista como o servidor faria (aceitar → `CONFIRMED` etc.).
 - Fakes ficam no `commonTest` de cada módulo (ex.: `feature/onboarding/.../Fakes.kt`, `app/.../AppFakes.kt`).
 - Regra de navegação do app é função pura (`AppState.area()`, `signedOutStart()`) e se testa sem UI.
 - O `SessionRepository` real emite `Loading` antes do estado conhecido para **cada** coletor. Fakes que

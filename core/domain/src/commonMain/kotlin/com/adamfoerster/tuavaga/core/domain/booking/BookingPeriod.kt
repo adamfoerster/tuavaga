@@ -1,4 +1,4 @@
-package com.adamfoerster.tuavaga.feature.explore.domain
+package com.adamfoerster.tuavaga.core.domain.booking
 
 import com.adamfoerster.tuavaga.core.domain.spot.BillingUnit
 import com.adamfoerster.tuavaga.core.domain.spot.Prices

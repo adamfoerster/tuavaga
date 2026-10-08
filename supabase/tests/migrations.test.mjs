@@ -277,5 +277,97 @@ await expectError('exclusion constraint blocks overlapping confirmations', `inse
   values ('${spotA}', '${condoId}', '${U1}', '${U2}', '${dayAt(6, '09:00')}', '${dayAt(6, '10:00')}', 'hour', 1, 800, 800, 'confirmed')`, [], '23P01');
 if (instant) ok('instant booking code ' + instant.code);
 
+// --- Fase 4: ciclo da reserva -----------------------------------------------------------------
+console.log('\n# booking lifecycle');
+const approve = (id) => `select public.approve_booking('${id}')`;
+const cancel = (id) => `select public.cancel_booking('${id}')`;
+const checkIn = (id) => `select public.check_in('${id}')`;
+const checkOut = (id) => `select public.check_out('${id}')`;
+const extend = (id, end) => `select * from public.extend_booking('${id}', ${end})`;
+const statusOf = async (id) => (await db.query('select status from public.my_bookings() where id = $1', [id])).rows[0]?.status;
+
+await as(U2);
+const renterRows = await expectOk('renter lists their bookings', 'select * from public.my_bookings()', [],
+  (r) => r.length === 3 && r.every((x) => x.role === 'renter') ? null : JSON.stringify(r.map((x) => x.role)));
+const instantRow = renterRows.find((r) => r.status === 'confirmed');
+if (instantRow.counterpart_name === 'Adam Foerster' && instantRow.counterpart_block === 'B' && instantRow.vehicle_plate === 'ABC1D23'
+  && instantRow.spot_number === '30' && instantRow.condo_name === 'Residencial Alameda Verde' && instantRow.cancel_notice_hours === 24)
+  ok('renter row has owner, vehicle, spot and condo'); else fail('renter row', JSON.stringify(instantRow));
+const [p1, p2] = renterRows.filter((r) => r.status === 'pending').sort((x, y) => x.starts_at - y.starts_at).map((r) => r.id);
+await expectError('renter cannot approve', approve(p1), [], 'booking_not_found');
+await expectError('check-in only on the day', checkIn(instantRow.id), [], 'check_in_closed');
+await expectError('check-out needs a check-in', checkOut(instantRow.id), [], 'invalid_state');
+
+await as(U1);
+let ownerRows = await expectOk('owner lists the requests', 'select * from public.my_bookings()', [],
+  (r) => r.length === 3 && r.every((x) => x.role === 'owner') && r.every((x) => x.counterpart_name && x.vehicle_plate === 'ABC1D23') ? null : JSON.stringify(r));
+await expectOk('approve the first request', approve(p1));
+ownerRows = await expectOk('the overlapping request shows the conflict', 'select * from public.my_bookings()', [],
+  (r) => r.find((x) => x.id === p2)?.conflict_starts_at && !r.find((x) => x.id === p1)?.conflict_starts_at ? null : JSON.stringify(r));
+await expectError('approving the overlapping request', approve(p2), [], 'conflict');
+await expectError('approving twice', approve(p1), [], 'invalid_state');
+await expectOk('reject with reason and message', `select public.reject_booking($1, 'visita', ' Posso liberar outro dia. ')`, [p2]);
+await expectOk('rejection is stored', 'select reject_reason, reject_message from public.my_bookings() where id = $1', [p2],
+  (r) => r[0].reject_reason === 'visita' && r[0].reject_message === 'Posso liberar outro dia.' ? null : JSON.stringify(r));
+await expectError('rejecting a rejected request', `select public.reject_booking($1, 'outro', null)`, [p2], 'invalid_state');
+await expectError('owner cannot check in', checkIn(p1), [], 'booking_not_found');
+await expectError('owner cannot extend', extend(p1, `'${dayAt(0, '12:00')}'`), [], 'booking_not_found');
+
+await as(U2);
+await expectOk('extend into free time (recalculated)', extend(instantRow.id, `'${dayAt(7, '10:00')}'`), [],
+  (r) => r[0].units === 3 && r[0].total_cents === 10500 ? null : JSON.stringify(r));
+await expectError('extend backwards', extend(instantRow.id, `'${dayAt(6, '12:00')}'`), [], 'invalid_period');
+await expectError('extend beyond the weekly window', extend(p1, `'${dayAt(0, '19:00')}'`), [], 'spot_unavailable');
+await expectOk('renter cancels ahead of the notice', cancel(instantRow.id));
+await expectOk('cancelled by the renter', 'select status, cancelled_by_owner from public.my_bookings() where id = $1', [instantRow.id],
+  (r) => r[0].status === 'cancelled' && r[0].cancelled_by_owner === false ? null : JSON.stringify(r));
+await expectError('cancelling twice', cancel(instantRow.id), [], 'invalid_state');
+
+await as(U1);
+await expectOk('owner cancels a confirmed booking', cancel(p1));
+await as(U2);
+await expectOk('renter sees it was the owner', 'select cancelled_by_owner from public.my_bookings() where id = $1', [p1],
+  (r) => r[0].cancelled_by_owner === true ? null : JSON.stringify(r));
+
+// A booking starting in 10 minutes (inserted directly, as the RPC would).
+await db.exec('reset role');
+const live = (await db.query(`insert into public.bookings
+  (spot_id, condo_id, owner_id, renter_id, vehicle_id, starts_at, ends_at, billing_unit, units, unit_price_cents, total_cents, status)
+  values ($1, $2, $3, $4, $5, now() + interval '10 minutes', now() + interval '3 hours', 'hour', 3, 800, 2400, 'confirmed') returning id`,
+  [spotA, condoId, U1, U2, vehicle])).rows[0].id;
+await as(U2);
+await expectError('cancel after the notice window', cancel(live), [], 'cancel_window_closed');
+await expectOk('check-in 10 min before the start', checkIn(live));
+if (await statusOf(live) === 'in_progress') ok('in progress after check-in'); else fail('in progress after check-in', await statusOf(live));
+await expectError('check-in twice', checkIn(live), [], 'invalid_state');
+await expectOk('extend while parked', extend(live, `now() + interval '4 hours'`), [], (r) => r[0].units === 4 ? null : JSON.stringify(r));
+await as(U3);
+await expectOk('outsider has no bookings', 'select * from public.my_bookings()', [], (r) => r.length === 0 ? null : 'rows=' + r.length);
+await expectError('outsider cannot check out', checkOut(live), [], 'booking_not_found');
+await as(U2);
+await expectOk('check-out', checkOut(live));
+if (await statusOf(live) === 'completed') ok('completed after check-out'); else fail('completed after check-out', await statusOf(live));
+
+// Settling: an unanswered request past its deadline and a confirmed booking already over.
+await db.exec('reset role');
+const stale = (await db.query(`insert into public.bookings
+  (spot_id, condo_id, owner_id, renter_id, starts_at, ends_at, billing_unit, units, unit_price_cents, total_cents, status, respond_by)
+  values ($1, $2, $3, $4, now() + interval '2 days', now() + interval '2 days 2 hours', 'hour', 2, 1000, 2000, 'pending', now() - interval '1 minute') returning id`,
+  [spotM, condoId, U1, U2])).rows[0].id;
+const over = (await db.query(`insert into public.bookings
+  (spot_id, condo_id, owner_id, renter_id, starts_at, ends_at, billing_unit, units, unit_price_cents, total_cents, status)
+  values ($1, $2, $3, $4, now() - interval '5 hours', now() - interval '1 hour', 'hour', 4, 800, 3200, 'confirmed') returning id`,
+  [spotA, condoId, U1, U2])).rows[0].id;
+await as(U2);
+if (await statusOf(stale) === 'expired') ok('unanswered request expires'); else fail('unanswered request expires', await statusOf(stale));
+if (await statusOf(over) === 'completed') ok('finished booking completes'); else fail('finished booking completes', await statusOf(over));
+await as(U1);
+await expectError('owner cannot approve an expired request', approve(stale), [], 'invalid_state');
+await expectError('settle_bookings is internal', 'select public.settle_bookings()', [], 'permission denied');
+await as('anon');
+await expectError('anon cannot list bookings', 'select * from public.my_bookings()', [], 'permission denied');
+await expectError('anon cannot cancel', cancel(live), [], 'permission denied');
+await db.exec('reset role');
+
 console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL PASSED');
 process.exit(failures ? 1 : 0);

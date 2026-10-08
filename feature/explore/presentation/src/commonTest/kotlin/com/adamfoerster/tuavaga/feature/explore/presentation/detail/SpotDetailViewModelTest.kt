@@ -1,10 +1,10 @@
 package com.adamfoerster.tuavaga.feature.explore.presentation.detail
 
 import com.adamfoerster.tuavaga.core.designsystem.components.KbDayState
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
 import com.adamfoerster.tuavaga.core.domain.spot.Availability
 import com.adamfoerster.tuavaga.core.domain.spot.TimeWindow
 import com.adamfoerster.tuavaga.core.domain.util.DataError
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
 import com.adamfoerster.tuavaga.feature.explore.presentation.FakeCondos
 import com.adamfoerster.tuavaga.feature.explore.presentation.FakeExplore
 import com.adamfoerster.tuavaga.feature.explore.presentation.NOW

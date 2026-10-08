@@ -1,13 +1,13 @@
 package com.adamfoerster.tuavaga.feature.explore.presentation.request
 
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.booking.BookingStatus
 import com.adamfoerster.tuavaga.core.domain.spot.BillingUnit
 import com.adamfoerster.tuavaga.core.domain.spot.Prices
 import com.adamfoerster.tuavaga.core.domain.util.DataError
 import com.adamfoerster.tuavaga.core.domain.util.Result
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingConfirmation
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingError
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingStatus
 import com.adamfoerster.tuavaga.feature.explore.presentation.FakeCondos
 import com.adamfoerster.tuavaga.feature.explore.presentation.FakeExplore
 import com.adamfoerster.tuavaga.feature.explore.presentation.FakeVehicles
@@ -134,6 +134,18 @@ class BookingRequestViewModelTest {
 
         vm.onAction(BookingRequestAction.OnDoneClick)
         assertEquals(BookingRequestEvent.Finished, vm.events.first())
+    }
+
+    @Test
+    fun viewBookingOpensTheNewBooking() = runTest {
+        explore.requestResult = Result.Success(BookingConfirmation("b9", 4821, BookingStatus.PENDING, 7000))
+        val vm = viewModel(onix)
+        vm.onAction(BookingRequestAction.OnRulesChange(true))
+        vm.onAction(BookingRequestAction.OnReviewClick)
+        vm.onAction(BookingRequestAction.OnSendClick)
+        vm.onAction(BookingRequestAction.OnViewBookingClick)
+
+        assertEquals(BookingRequestEvent.ViewBooking("b9"), vm.events.first())
     }
 
     @Test

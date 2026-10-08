@@ -8,6 +8,33 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-08
+
+### Adicionado
+
+- Migration `20261011000000_booking_lifecycle.sql`: `my_bookings` (reservas do locatário e do locador,
+  com a outra parte, o veículo e o conflito de horário dos pedidos) e as RPCs `approve_booking`,
+  `reject_booking`, `cancel_booking`, `check_in`, `check_out` e `extend_booking`, cada uma conferindo
+  papel e transição. Pedidos sem resposta expiram e reservas passadas terminam sozinhos
+  (`settle_bookings`; pg_cron opcional).
+- Aba Reservas com Próximas, Em curso e Histórico; abre offline com as reservas salvas no aparelho.
+- Detalhe da reserva: entrada e saída, "Começa em", check-in liberado 30 min antes, como chegar,
+  locador, valor, prazo de cancelamento sem aviso, cancelar, e os estados recusada, cancelada pelo
+  locador, sem resposta e atraso ("Passou do horário").
+- Check-in e check-out com as três confirmações, e "Preciso de mais tempo" para estender a saída com o
+  novo valor.
+- Minhas vagas: ganhos e reservas do mês, solicitações aguardando (aceitar ou recusar com motivo e
+  mensagem, aviso de conflito de horário) e agenda de cada vaga com calendário e reservas do mês.
+- "Ver reserva" ao terminar um pedido no Explorar.
+- `KbReadout` aceita tom no valor (verde na entrada do check-in, vermelho no atraso).
+- Cache local das reservas no Room (banco v4, com migração automática).
+
+### Alterado
+
+- Período, cotação, status de reserva e nomes abreviados passaram de `feature/explore` para `core`,
+  junto com os textos de valor e período, pois Reservas e Minhas vagas também os usam.
+- Cartão de Minhas vagas com "Agenda" e o número de pedidos da vaga.
+
 ## [0.5.0] - 2026-10-08
 
 ### Adicionado

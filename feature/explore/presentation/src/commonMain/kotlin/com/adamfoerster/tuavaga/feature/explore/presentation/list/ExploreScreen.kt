@@ -41,10 +41,13 @@ import com.adamfoerster.tuavaga.core.designsystem.components.KbText
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTone
 import com.adamfoerster.tuavaga.core.designsystem.components.KbToolbar
 import com.adamfoerster.tuavaga.core.designsystem.components.KbZebraStripe
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
 import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
 import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
 import com.adamfoerster.tuavaga.core.presentation.dayMonth
+import com.adamfoerster.tuavaga.core.presentation.formatMoney
 import com.adamfoerster.tuavaga.core.presentation.short
+import com.adamfoerster.tuavaga.core.presentation.suffix
 import com.adamfoerster.tuavaga.feature.explore.domain.ExploreFilters
 import com.adamfoerster.tuavaga.feature.explore.domain.SpotListing
 import com.adamfoerster.tuavaga.feature.explore.presentation.common.PeriodFields
@@ -52,10 +55,7 @@ import com.adamfoerster.tuavaga.feature.explore.presentation.common.PeriodSheet
 import com.adamfoerster.tuavaga.feature.explore.presentation.common.headlinePrice
 import com.adamfoerster.tuavaga.feature.explore.presentation.common.metaLine
 import com.adamfoerster.tuavaga.feature.explore.presentation.common.ownerLine
-import com.adamfoerster.tuavaga.feature.explore.presentation.common.suffix
 import com.adamfoerster.tuavaga.feature.explore.presentation.common.weeklySummary
-import com.adamfoerster.tuavaga.feature.explore.presentation.common.formatMoney
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
 import kotlinx.datetime.LocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
 

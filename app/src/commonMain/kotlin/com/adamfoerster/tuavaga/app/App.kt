@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -15,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.adamfoerster.tuavaga.app.shell.MainShellRoot
+import com.adamfoerster.tuavaga.app.shell.MainTab
 import com.adamfoerster.tuavaga.app.shell.ShellNavigation
 import com.adamfoerster.tuavaga.core.designsystem.KerbTheme
 import com.adamfoerster.tuavaga.core.designsystem.TuaVagaTheme
@@ -28,8 +31,12 @@ import com.adamfoerster.tuavaga.core.designsystem.components.KbText
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTone
 import com.adamfoerster.tuavaga.feature.auth.presentation.navigation.AuthGraph
 import com.adamfoerster.tuavaga.feature.auth.presentation.navigation.authGraph
+import com.adamfoerster.tuavaga.feature.bookings.presentation.navigation.BookingDetailRoute
+import com.adamfoerster.tuavaga.feature.bookings.presentation.navigation.bookingsGraph
 import com.adamfoerster.tuavaga.feature.explore.presentation.navigation.exploreGraph
 import com.adamfoerster.tuavaga.feature.explore.presentation.navigation.spotDetailRoute
+import com.adamfoerster.tuavaga.feature.hosting.presentation.navigation.AgendaRoute
+import com.adamfoerster.tuavaga.feature.hosting.presentation.navigation.RequestsRoute
 import com.adamfoerster.tuavaga.feature.hosting.presentation.navigation.SpotWizardRoute
 import com.adamfoerster.tuavaga.feature.hosting.presentation.navigation.hostingGraph
 import com.adamfoerster.tuavaga.feature.onboarding.presentation.navigation.CondoOnboardingGraph
@@ -108,6 +115,13 @@ private fun OnboardingArea(onFinished: () -> Unit, onExit: () -> Unit) {
 @Composable
 private fun MainArea() {
     val navController = rememberNavController()
+    // Set by screens outside the shell that send the user to one of its tabs.
+    var requestedTab by remember { mutableStateOf<MainTab?>(null) }
+    val openBooking = { bookingId: String -> navController.navigate(BookingDetailRoute(bookingId)) }
+    val backToExplore = {
+        navController.popBackStack(MainRoute, inclusive = false)
+        requestedTab = MainTab.EXPLORE
+    }
     NavHost(navController = navController, startDestination = MainRoute) {
         composable<MainRoute> {
             MainShellRoot(
@@ -116,11 +130,23 @@ private fun MainArea() {
                     onCreateSpot = { condoId -> navController.navigate(SpotWizardRoute(condoId = condoId)) },
                     onEditSpot = { spotId -> navController.navigate(SpotWizardRoute(spotId = spotId)) },
                     onOpenSpot = { condoId, spotId, period -> navController.navigate(spotDetailRoute(condoId, spotId, period)) },
+                    onOpenBooking = openBooking,
+                    onRequests = { navController.navigate(RequestsRoute) },
+                    onAgenda = { spotId -> navController.navigate(AgendaRoute(spotId)) },
                 ),
+                requestedTab = requestedTab,
+                onTabRequestHandled = { requestedTab = null },
             )
         }
-        hostingGraph(navController)
-        exploreGraph(navController, onFinished = { navController.popBackStack(MainRoute, inclusive = false) })
+        hostingGraph(navController, onOpenBooking = openBooking)
+        bookingsGraph(navController, onExplore = backToExplore)
+        exploreGraph(
+            navController,
+            onFinished = { navController.popBackStack(MainRoute, inclusive = false) },
+            onViewBooking = { bookingId ->
+                navController.navigate(BookingDetailRoute(bookingId)) { popUpTo<MainRoute>() }
+            },
+        )
         condoOnboardingGraph(
             navController = navController,
             onFinished = { navController.popBackStack(MainRoute, inclusive = false) },

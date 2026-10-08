@@ -1,13 +1,15 @@
 package com.adamfoerster.tuavaga.feature.explore.data
 
 import com.adamfoerster.tuavaga.core.data.util.remoteCall
+import com.adamfoerster.tuavaga.core.data.util.toDb
+import com.adamfoerster.tuavaga.core.data.util.toDbTimestamp
 import com.adamfoerster.tuavaga.core.data.util.toRemoteError
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
 import com.adamfoerster.tuavaga.core.domain.spot.Availability
 import com.adamfoerster.tuavaga.core.domain.util.DataError
 import com.adamfoerster.tuavaga.core.domain.util.Result
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingConfirmation
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingError
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingRequest
 import com.adamfoerster.tuavaga.feature.explore.domain.ExploreRepository
 import com.adamfoerster.tuavaga.feature.explore.domain.SpotListing

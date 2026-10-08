@@ -1,5 +1,7 @@
 package com.adamfoerster.tuavaga.feature.explore.presentation
 
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.booking.BookingStatus
 import com.adamfoerster.tuavaga.core.domain.condo.ActiveCondoRepository
 import com.adamfoerster.tuavaga.core.domain.condo.CondoError
 import com.adamfoerster.tuavaga.core.domain.condo.CondoPreview
@@ -24,9 +26,7 @@ import com.adamfoerster.tuavaga.core.domain.vehicle.VehicleRepository
 import com.adamfoerster.tuavaga.core.domain.vehicle.VehicleType
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingConfirmation
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingError
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingRequest
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingStatus
 import com.adamfoerster.tuavaga.feature.explore.domain.ExploreRepository
 import com.adamfoerster.tuavaga.feature.explore.domain.SpotListing
 import kotlinx.coroutines.flow.MutableStateFlow

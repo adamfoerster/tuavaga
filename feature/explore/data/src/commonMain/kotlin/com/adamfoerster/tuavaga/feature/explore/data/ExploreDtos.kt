@@ -1,27 +1,22 @@
 package com.adamfoerster.tuavaga.feature.explore.data
 
+import com.adamfoerster.tuavaga.core.data.util.fromDbTimestamp
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.booking.BookingStatus
 import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
 import com.adamfoerster.tuavaga.core.domain.spot.Availability
-import com.adamfoerster.tuavaga.core.domain.spot.BillingUnit
 import com.adamfoerster.tuavaga.core.domain.spot.DayOverride
 import com.adamfoerster.tuavaga.core.domain.spot.Prices
 import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
 import com.adamfoerster.tuavaga.core.domain.spot.SpotFormats
 import com.adamfoerster.tuavaga.core.domain.spot.TimeWindow
-import com.adamfoerster.tuavaga.core.domain.time.APP_TIME_ZONE
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingConfirmation
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingError
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingStatus
 import com.adamfoerster.tuavaga.feature.explore.domain.SpotListing
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.toInstant
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlin.time.Instant
 
 /** Row of `search_spots` (supabase/migrations/20261010000100_bookings.sql). */
 @Serializable
@@ -125,19 +120,10 @@ internal fun availabilityOf(weekly: List<WeeklyRowDto>, overrides: List<Override
     },
 )
 
-/** Timestamps go to Postgres as instants (UTC); local times are Brasília. */
-internal fun LocalDateTime.toDbTimestamp(): String = toInstant(APP_TIME_ZONE).toString()
-
 internal fun RangeDto.toPeriod() = BookingPeriod(
-    start = Instant.parse(startsAt).toLocalDateTime(APP_TIME_ZONE),
-    end = Instant.parse(endsAt).toLocalDateTime(APP_TIME_ZONE),
+    start = fromDbTimestamp(startsAt),
+    end = fromDbTimestamp(endsAt),
 )
-
-internal fun BillingUnit.toDb(): String = when (this) {
-    BillingUnit.HOUR -> "hour"
-    BillingUnit.DAY -> "day"
-    BillingUnit.WEEK -> "week"
-}
 
 internal fun BookingResultDto.toConfirmation() = BookingConfirmation(
     id = id,

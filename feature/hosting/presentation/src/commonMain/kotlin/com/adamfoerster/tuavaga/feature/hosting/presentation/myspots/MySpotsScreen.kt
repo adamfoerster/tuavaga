@@ -29,8 +29,8 @@ import com.adamfoerster.tuavaga.core.designsystem.components.KbTag
 import com.adamfoerster.tuavaga.core.designsystem.components.KbText
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTone
 import com.adamfoerster.tuavaga.core.designsystem.components.KbToolbar
-import com.adamfoerster.tuavaga.feature.hosting.domain.Spot
 import com.adamfoerster.tuavaga.core.domain.spot.SpotFormats
+import com.adamfoerster.tuavaga.feature.hosting.domain.Spot
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotStatus
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -39,6 +39,8 @@ import org.koin.compose.viewmodel.koinViewModel
 fun MySpotsRoot(
     onCreateSpot: (condoId: String?) -> Unit,
     onEditSpot: (spotId: String) -> Unit,
+    onAgenda: (spotId: String) -> Unit,
+    onRequests: () -> Unit,
     onWantSpot: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MySpotsViewModel = koinViewModel(),
@@ -53,6 +55,8 @@ fun MySpotsRoot(
             when (action) {
                 is MySpotsAction.OnCreateSpot -> onCreateSpot(action.condoId)
                 is MySpotsAction.OnEditSpot -> onEditSpot(action.spotId)
+                is MySpotsAction.OnAgendaClick -> onAgenda(action.spotId)
+                MySpotsAction.OnRequestsClick -> onRequests()
                 MySpotsAction.OnWantSpotClick -> onWantSpot()
                 else -> Unit
             }
@@ -79,10 +83,17 @@ fun MySpotsScreen(
             selected = UseMode.HAVE,
             onSelect = { if (it == UseMode.WANT) onAction(MySpotsAction.OnWantSpotClick) },
         )
-        // Earnings and bookings arrive with the booking phase; until then they are truly zero.
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            KbReadout(label = "Ganhos do mês", value = "0", unit = "R$", modifier = Modifier.weight(1f))
-            KbReadout(label = "Reservas", value = "0", unit = "no mês", modifier = Modifier.weight(1f))
+            KbReadout(label = "Ganhos do mês", value = reais(state.monthEarningsCents), unit = "R$", modifier = Modifier.weight(1f))
+            KbReadout(label = "Reservas", value = "${state.monthBookingCount}", unit = "no mês", modifier = Modifier.weight(1f))
+        }
+        if (state.pendingCount > 0) {
+            KbButton(
+                text = if (state.pendingCount == 1) "1 solicitação aguardando" else "${state.pendingCount} solicitações aguardando",
+                onClick = { onAction(MySpotsAction.OnRequestsClick) },
+                variant = KbButtonVariant.Volt,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
         KbButton(
             text = "Cadastrar vaga",
@@ -102,12 +113,12 @@ fun MySpotsScreen(
         if (state.isLoading && state.groups.isEmpty()) {
             KbMeter(value = 0.4f, label = "Carregando suas vagas", segments = 24, redline = 1f)
         }
-        state.groups.forEach { group -> CondoGroup(group, state.updatingSpotId, onAction) }
+        state.groups.forEach { group -> CondoGroup(group, state, onAction) }
     }
 }
 
 @Composable
-private fun CondoGroup(group: CondoSpots, updatingSpotId: String?, onAction: (MySpotsAction) -> Unit) {
+private fun CondoGroup(group: CondoSpots, state: MySpotsState, onAction: (MySpotsAction) -> Unit) {
     val colors = KerbTheme.colors
     Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.Bottom) {
         KbText(group.condoName, KerbTheme.typography.sm, modifier = Modifier.weight(1f))
@@ -131,7 +142,9 @@ private fun CondoGroup(group: CondoSpots, updatingSpotId: String?, onAction: (My
             )
         }
     }
-    group.spots.forEach { spot -> SpotCard(spot, isUpdating = spot.id == updatingSpotId, onAction = onAction) }
+    group.spots.forEach { spot ->
+        SpotCard(spot, isUpdating = spot.id == state.updatingSpotId, pending = state.pendingFor(spot.id), onAction = onAction)
+    }
 }
 
 /** "SUBSOLO 2 · SETOR B · R$ 8/H" */
@@ -142,7 +155,7 @@ internal fun Spot.metaLine(): String = listOfNotNull(
 ).joinToString(" · ").uppercase()
 
 @Composable
-private fun SpotCard(spot: Spot, isUpdating: Boolean, onAction: (MySpotsAction) -> Unit) {
+private fun SpotCard(spot: Spot, isUpdating: Boolean, pending: Int, onAction: (MySpotsAction) -> Unit) {
     val active = spot.status == SpotStatus.ACTIVE
     KbCard(onClick = { onAction(MySpotsAction.OnEditSpot(spot.id)) }) {
         KbText(
@@ -153,17 +166,29 @@ private fun SpotCard(spot: Spot, isUpdating: Boolean, onAction: (MySpotsAction) 
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             KbTag(if (active) "Ativa" else "Pausada", tone = if (active) KbTone.Go else KbTone.Caution)
-            Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
-                KbButton(
-                    text = if (active) "Pausar" else "Reativar",
-                    onClick = { onAction(MySpotsAction.OnToggleStatus(spot.id)) },
-                    variant = KbButtonVariant.Ghost,
-                    isLoading = isUpdating,
-                )
-            }
+            if (pending > 0) KbTag(if (pending == 1) "1 pedido" else "$pending pedidos", tone = KbTone.Caution)
+        }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            KbButton(
+                text = "Agenda",
+                onClick = { onAction(MySpotsAction.OnAgendaClick(spot.id)) },
+                variant = KbButtonVariant.Ghost,
+                modifier = Modifier.weight(1f),
+            )
+            KbButton(
+                text = if (active) "Pausar" else "Reativar",
+                onClick = { onAction(MySpotsAction.OnToggleStatus(spot.id)) },
+                variant = KbButtonVariant.Ghost,
+                isLoading = isUpdating,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
+
+/** "70" or "70,50" for the earnings readout (the unit "R$" is shown apart). */
+internal fun reais(cents: Int): String =
+    if (cents % 100 == 0) "${cents / 100}" else "${cents / 100},${(cents % 100).toString().padStart(2, '0')}"

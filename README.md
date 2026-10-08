@@ -4,11 +4,12 @@ App de aluguel de vagas de garagem em condomínio. Kotlin Multiplatform + Compos
 para **Android**, **iOS** e **Web (wasmJs)**, com **Supabase** (Postgres + Auth) no backend e **Room**
 para estado local em todos os targets.
 
-> Estado atual (fase 3 do design): autenticação, introdução, entrar/criar condomínio, cadastro do
+> Estado atual (fase 4 do design): autenticação, introdução, entrar/criar condomínio, cadastro do
 > morador e veículos, seletor e troca de condomínio, tab bar, "Minhas vagas" com o cadastro de vaga em
-> 3 passos (localização, preço e regras, disponibilidade) e o Explorar: lista e mapa da garagem por
-> período, detalhe da vaga com calendário e o pedido de reserva (montar → resumo → enviado), tudo no
-> design system Kerb. As próximas fases estão em [docs/plano-design.md](docs/plano-design.md).
+> 3 passos, ganhos do mês, solicitações (aceitar/recusar) e agenda da vaga; o Explorar (lista e mapa da
+> garagem por período, detalhe da vaga e pedido de reserva) e a aba Reservas com detalhe, check-in,
+> check-out, mais tempo e cancelamento, tudo no design system Kerb. As próximas fases estão em
+> [docs/plano-design.md](docs/plano-design.md).
 
 ## Configuração
 
@@ -48,14 +49,15 @@ build-logic/convention      convention plugins (tuavaga.kmp.library / .compose /
 app                         KMP: App() raiz, áreas de navegação, shell (seletor de condomínio + tab bar), Koin, entry points
 androidApp                  Application Android (AGP 9 não permite KMP no módulo de app)
 iosApp                      projeto Xcode
-core/domain                 Result/DataError, User, sessão, condomínios, veículos, BrFormats, termos e disponibilidade de vaga, fuso do app (AppTime)
-core/data                   cliente Supabase, repositórios de sessão/condomínios/veículos, BuildKonfig (AppConfig)
+core/domain                 Result/DataError, User, sessão, condomínios, veículos, BrFormats, termos e disponibilidade de vaga, reservas (Booking, regras, BookingRepository), fuso do app (AppTime)
+core/data                   cliente Supabase, repositórios de sessão/condomínios/veículos/reservas, BuildKonfig (AppConfig)
 core/database               Room 3: TuaVagaDatabase, DAOs, drivers por plataforma, worker SQLite web
-core/presentation           UiText, ObserveAsEvents, datas em português (DateTexts)
+core/presentation           UiText, ObserveAsEvents, datas, valores e status de reserva em português, formulário de recusa
 core/design-system          Kerb: tema escuro/claro, fontes (Barlow, Barlow Condensed, JetBrains Mono) e componentes Kb*
 feature/auth/{domain,data,presentation}   login, cadastro, confirmação, recuperação de senha
+feature/bookings/presentation    aba Reservas, detalhe da reserva, check-in e check-out
 feature/explore/{domain,data,presentation}   Explorar: lista/mapa por período, detalhe da vaga, pedido de reserva
-feature/hosting/{domain,data,presentation}   locador: Minhas vagas, cadastro/edição de vaga, disponibilidade
+feature/hosting/{domain,data,presentation}   locador: Minhas vagas, cadastro/edição de vaga, solicitações, agenda
 feature/onboarding/presentation   introdução, entrar/criar condomínio, cadastro do morador e veículos
 feature/profile/presentation      aba Perfil (por ora: identidade e "Sair da conta")
 supabase                    migrations SQL, testes das migrations (PGlite) e instruções do painel
@@ -68,6 +70,9 @@ supabase                    migrations SQL, testes das migrations (PGlite) e ins
   entrar, concluir o primeiro cadastro de condomínio ou sair não exigem chamadas de navegação.
 - **Condomínios**: os vínculos do usuário ficam em cache no Room (tabela `membership`), então o app abre
   offline; o condomínio ativo é uma preferência local (`app_prefs.activeCondoId`).
+- **Reservas**: `BookingRepository` (em `core`, usado por Reservas e Minhas vagas) guarda a última lista do
+  servidor no Room (`booking_cache`, JSON por usuário); as telas mostram o cache na hora e atualizam em
+  seguida, e cada ação (aceitar, cancelar, check-in…) recarrega o cache.
 - **Room na Web**: usa `WebWorkerSQLiteDriver` com o worker em `core/database/sqlite-worker/worker.js`
   (SQLite WASM + OPFS). O alias do webpack que liga o worker fica em `app/webpack.config.d/`.
   Sem OPFS (ex.: aba anônima) o banco cai para memória.

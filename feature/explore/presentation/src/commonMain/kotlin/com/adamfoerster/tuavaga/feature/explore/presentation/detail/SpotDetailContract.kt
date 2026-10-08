@@ -1,9 +1,9 @@
 package com.adamfoerster.tuavaga.feature.explore.presentation.detail
 
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.booking.BookingQuote
 import com.adamfoerster.tuavaga.core.domain.spot.Availability
 import com.adamfoerster.tuavaga.core.presentation.UiText
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingQuote
 import com.adamfoerster.tuavaga.feature.explore.domain.SpotListing
 import kotlinx.datetime.LocalDate
 

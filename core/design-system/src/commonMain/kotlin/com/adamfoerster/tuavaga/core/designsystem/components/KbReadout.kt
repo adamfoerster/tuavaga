@@ -12,7 +12,8 @@ import com.adamfoerster.tuavaga.core.designsystem.KerbTheme
 
 /**
  * Kerb readout (`kb-readout`): label, big mono value with a small [unit], and an optional [delta]
- * line colored by [deltaTone] (Go / Danger / otherwise telemetry).
+ * line colored by [deltaTone] (Go / Danger / otherwise telemetry). [tone] colors the value itself
+ * (board 24 "Entrada 08:02" in go, board 18 "Passou do horário" in danger); the bar follows it.
  */
 @Composable
 fun KbReadout(
@@ -22,18 +23,25 @@ fun KbReadout(
     unit: String? = null,
     delta: String? = null,
     deltaTone: KbTone = KbTone.Info,
+    tone: KbTone? = null,
 ) {
     val colors = KerbTheme.colors
     val typography = KerbTheme.typography
+    val valueColor = when (tone) {
+        KbTone.Go -> colors.voltText
+        KbTone.Danger -> colors.danger
+        KbTone.Caution -> colors.cautionText
+        else -> colors.ink
+    }
     Column(
         modifier = modifier
             .background(colors.surfaceRaised)
-            .leftBar(colors.apex, 4.dp)
+            .leftBar(if (tone == KbTone.Danger) colors.danger else colors.apex, 4.dp)
             .padding(start = 20.dp, top = 12.dp, end = 16.dp, bottom = 12.dp),
     ) {
         KbText(label, typography.label, color = colors.inkMuted, maxLines = 1)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            KbText(value, typography.dataXl, modifier = Modifier.alignByBaseline(), maxLines = 1)
+            KbText(value, typography.dataXl, color = valueColor, modifier = Modifier.alignByBaseline(), maxLines = 1)
             if (unit != null) {
                 KbText(unit, typography.dataSmall, color = colors.inkMuted, modifier = Modifier.alignByBaseline())
             }

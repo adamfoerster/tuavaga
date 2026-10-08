@@ -1,11 +1,12 @@
 package com.adamfoerster.tuavaga.feature.explore.data
 
+import com.adamfoerster.tuavaga.core.data.util.toDbTimestamp
+import com.adamfoerster.tuavaga.core.domain.booking.BookingStatus
 import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
 import com.adamfoerster.tuavaga.core.domain.spot.DayOverride
 import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
 import com.adamfoerster.tuavaga.core.domain.spot.TimeWindow
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingError
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingStatus
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime

@@ -1,9 +1,9 @@
 package com.adamfoerster.tuavaga.feature.explore.presentation.list
 
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
 import com.adamfoerster.tuavaga.core.domain.condo.Membership
 import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
 import com.adamfoerster.tuavaga.core.presentation.UiText
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
 import com.adamfoerster.tuavaga.feature.explore.domain.ExploreFilters
 import com.adamfoerster.tuavaga.feature.explore.domain.SpotListing
 

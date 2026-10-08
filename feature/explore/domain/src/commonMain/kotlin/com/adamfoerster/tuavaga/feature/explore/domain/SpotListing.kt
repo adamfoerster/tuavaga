@@ -1,5 +1,8 @@
 package com.adamfoerster.tuavaga.feature.explore.domain
 
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.booking.BookingQuote
+import com.adamfoerster.tuavaga.core.domain.booking.BookingStatus
 import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
 import com.adamfoerster.tuavaga.core.domain.spot.Availability
 import com.adamfoerster.tuavaga.core.domain.spot.Prices
@@ -43,16 +46,6 @@ data class SpotListing(
     val isBookable: Boolean get() = available && !isMine
 }
 
-/** "Marina Ribeiro Souza" → "Marina R." (the design never shows full surnames). */
-fun shortName(fullName: String?): String? {
-    val parts = fullName?.trim()?.split(Regex("\\s+"))?.filter { it.isNotEmpty() }.orEmpty()
-    return when {
-        parts.isEmpty() -> null
-        parts.size == 1 -> parts[0]
-        else -> "${parts.first()} ${parts.last().first().uppercaseChar()}."
-    }
-}
-
 /** Filter chips of board 04. */
 data class ExploreFilters(
     val features: Set<SpotFeature> = emptySet(),
@@ -69,8 +62,6 @@ data class ExploreFilters(
         const val CHEAP_HOUR_CENTS = 1000
     }
 }
-
-enum class BookingStatus { PENDING, CONFIRMED }
 
 /** What the backend answered to a booking request. */
 data class BookingConfirmation(val id: String, val code: Long, val status: BookingStatus, val totalCents: Int)

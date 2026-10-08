@@ -2,12 +2,12 @@ package com.adamfoerster.tuavaga.feature.explore.presentation.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
 import com.adamfoerster.tuavaga.core.domain.condo.ActiveCondoRepository
 import com.adamfoerster.tuavaga.core.domain.condo.CondoRepository
 import com.adamfoerster.tuavaga.core.domain.condo.resolveActiveMembership
 import com.adamfoerster.tuavaga.core.domain.util.Result
 import com.adamfoerster.tuavaga.core.presentation.toUiText
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
 import com.adamfoerster.tuavaga.feature.explore.domain.ExploreFilters
 import com.adamfoerster.tuavaga.feature.explore.domain.ExploreRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi

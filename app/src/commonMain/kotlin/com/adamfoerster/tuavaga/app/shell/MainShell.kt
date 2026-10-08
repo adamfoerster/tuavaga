@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,7 +18,8 @@ import com.adamfoerster.tuavaga.core.designsystem.KerbTheme
 import com.adamfoerster.tuavaga.core.designsystem.components.KbIcons
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTab
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTabBar
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
+import com.adamfoerster.tuavaga.feature.bookings.presentation.list.BookingsRoot
 import com.adamfoerster.tuavaga.feature.explore.presentation.list.ExploreRoot
 import com.adamfoerster.tuavaga.feature.hosting.presentation.myspots.MySpotsRoot
 import com.adamfoerster.tuavaga.feature.profile.presentation.ProfileRoot
@@ -38,14 +40,26 @@ class ShellNavigation(
     val onCreateSpot: (condoId: String?) -> Unit,
     val onEditSpot: (spotId: String) -> Unit,
     val onOpenSpot: (condoId: String, spotId: String, period: BookingPeriod) -> Unit,
+    val onOpenBooking: (bookingId: String) -> Unit,
+    val onRequests: () -> Unit,
+    val onAgenda: (spotId: String) -> Unit,
 )
 
 @Composable
 fun MainShellRoot(
     navigation: ShellNavigation,
+    /** A tab asked from outside the shell (e.g. "Buscar outra vaga" in a booking); cleared via [onTabRequestHandled]. */
+    requestedTab: MainTab? = null,
+    onTabRequestHandled: () -> Unit = {},
     viewModel: ShellViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(requestedTab) {
+        if (requestedTab != null) {
+            viewModel.onAction(ShellAction.OnTabSelect(requestedTab))
+            onTabRequestHandled()
+        }
+    }
     MainShellScreen(
         state = state,
         navigation = navigation,
@@ -72,13 +86,15 @@ fun MainShellScreen(
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when (state.tab) {
                     MainTab.EXPLORE -> ExploreRoot(onOpenSpot = navigation.onOpenSpot, onListSpot = createInActiveCondo)
-                    MainTab.BOOKINGS -> ComingSoonTab(
-                        title = "Reservas",
-                        text = "Suas reservas e pedidos vão aparecer aqui na próxima versão.",
+                    MainTab.BOOKINGS -> BookingsRoot(
+                        onOpenBooking = navigation.onOpenBooking,
+                        onExplore = { onAction(ShellAction.OnTabSelect(MainTab.EXPLORE)) },
                     )
                     MainTab.MY_SPOTS -> MySpotsRoot(
                         onCreateSpot = { condoId -> navigation.onCreateSpot(condoId ?: state.active?.condo?.id) },
                         onEditSpot = navigation.onEditSpot,
+                        onAgenda = navigation.onAgenda,
+                        onRequests = navigation.onRequests,
                         onWantSpot = { onAction(ShellAction.OnTabSelect(MainTab.EXPLORE)) },
                     )
                     MainTab.MESSAGES -> ComingSoonTab(

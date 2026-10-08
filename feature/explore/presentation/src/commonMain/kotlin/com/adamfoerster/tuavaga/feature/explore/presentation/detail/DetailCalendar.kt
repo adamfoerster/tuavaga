@@ -2,11 +2,11 @@ package com.adamfoerster.tuavaga.feature.explore.presentation.detail
 
 import com.adamfoerster.tuavaga.core.designsystem.components.KbDayCell
 import com.adamfoerster.tuavaga.core.designsystem.components.KbDayState
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
 import com.adamfoerster.tuavaga.core.domain.spot.Availability
 import com.adamfoerster.tuavaga.core.domain.spot.DayAvailability
 import com.adamfoerster.tuavaga.core.presentation.firstOfMonth
 import com.adamfoerster.tuavaga.core.presentation.namePt
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime

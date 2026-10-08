@@ -11,6 +11,7 @@ Rode as migrations **em ordem** no SQL Editor do projeto (ou `supabase db push` 
 | `20261009000000_spots.sql` | vagas (`spots`), janela semanal (`spot_weekly_availability`), exceções por data (`spot_date_overrides`), RLS e as RPCs `save_spot` e `set_spot_status`; a busca e o convite passam a contar as vagas ativas |
 | `20261010000000_spot_details.sql` | características (`features`), pé-direito (`height_cm`) e "como chegar" (`directions`) da vaga; `save_spot` passa a recebê-los |
 | `20261010000100_bookings.sql` | extensão `btree_gist`, reservas (`bookings`) com código sequencial e trava contra sobreposição, RLS e as RPCs `search_spots`, `spot_busy_ranges` e `request_booking` |
+| `20261011000000_booking_lifecycle.sql` | ciclo da reserva: colunas de cancelamento e check-in/out, `my_bookings` (lista do locatário e do locador) e as RPCs `approve_booking`, `reject_booking`, `cancel_booking`, `check_in`, `check_out`, `extend_booking` |
 
 Regras da fase de condomínios:
 
@@ -43,6 +44,29 @@ Regras da fase de reservas (pedido):
   pedidos pendentes podem conflitar até o locador decidir (fase 4).
 - Só locatário e locador leem a reserva; o locador também vê o veículo dela. `spot_busy_ranges` só
   devolve os horários ocupados, sem dizer quem reservou.
+
+Regras do ciclo da reserva:
+
+- Cada mudança de estado é uma RPC que confere o papel e a transição (erro `booking_not_found` para quem
+  não é a parte certa, `invalid_state` quando a reserva já mudou):
+  - locador: `approve_booking` (falha com `conflict` se já houver reserva confirmada no período) e
+    `reject_booking` (motivo `visita`/`uso`/`veiculo`/`outro` + mensagem opcional);
+  - `cancel_booking`: o locatário cancela um pedido a qualquer momento e uma reserva confirmada só até
+    `cancel_notice_hours` antes da entrada (`cancel_window_closed`); o locador cancela uma confirmada
+    até a entrada;
+  - locatário: `check_in` (de 30 min antes da entrada até a saída, senão `check_in_closed`),
+    `check_out` e `extend_booking` (nova saída livre e dentro da disponibilidade, até 7 dias a mais; o
+    valor é recalculado na mesma forma de cobrança).
+- `my_bookings` devolve as reservas em que o usuário é locatário ou locador, com vaga, condomínio, nome,
+  bloco e unidade da outra parte, veículo e, para pedidos pendentes, a reserva confirmada que conflita.
+- Pedidos sem resposta no prazo expiram, reservas confirmadas que passaram terminam e reservas em curso
+  terminam 12 h depois da saída sem check-out. Isso acontece em `settle_bookings()`, chamada no início de
+  `my_bookings` e de cada RPC do ciclo, então não depende de agendador. Para manter o banco em dia mesmo
+  sem uso do app, habilite **pg_cron** (Database → Extensions) e agende, no SQL Editor:
+
+  ```sql
+  select cron.schedule('settle-bookings', '*/5 * * * *', 'select public.settle_bookings()');
+  ```
 
 ### Testes das migrations
 

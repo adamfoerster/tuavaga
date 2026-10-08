@@ -27,12 +27,12 @@ import com.adamfoerster.tuavaga.core.designsystem.components.KbErrorText
 import com.adamfoerster.tuavaga.core.designsystem.components.KbOption
 import com.adamfoerster.tuavaga.core.designsystem.components.KbSelect
 import com.adamfoerster.tuavaga.core.designsystem.components.KbText
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.booking.plusMinutes
 import com.adamfoerster.tuavaga.core.domain.spot.SpotFormats
 import com.adamfoerster.tuavaga.core.presentation.UiText
 import com.adamfoerster.tuavaga.core.presentation.short
 import com.adamfoerster.tuavaga.core.presentation.weekdayDayMonth
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
-import com.adamfoerster.tuavaga.feature.explore.domain.plusMinutes
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime

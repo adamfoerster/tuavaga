@@ -2,16 +2,16 @@ package com.adamfoerster.tuavaga.feature.explore.presentation.request
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.booking.suggestedUnit
 import com.adamfoerster.tuavaga.core.domain.condo.CondoRepository
 import com.adamfoerster.tuavaga.core.domain.util.Result
 import com.adamfoerster.tuavaga.core.domain.vehicle.VehicleRepository
 import com.adamfoerster.tuavaga.core.presentation.UiText
 import com.adamfoerster.tuavaga.core.presentation.toUiText
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingError
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
 import com.adamfoerster.tuavaga.feature.explore.domain.BookingRequest
 import com.adamfoerster.tuavaga.feature.explore.domain.ExploreRepository
-import com.adamfoerster.tuavaga.feature.explore.domain.suggestedUnit
 import com.adamfoerster.tuavaga.feature.explore.presentation.common.toUiText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -65,6 +65,9 @@ class BookingRequestViewModel(
             BookingRequestAction.OnSendClick -> send()
             BookingRequestAction.OnRetry -> load()
             BookingRequestAction.OnDoneClick -> viewModelScope.launch { eventChannel.send(BookingRequestEvent.Finished) }
+            BookingRequestAction.OnViewBookingClick -> _state.value.confirmation?.let { done ->
+                viewModelScope.launch { eventChannel.send(BookingRequestEvent.ViewBooking(done.id)) }
+            }
         }
     }
 

@@ -6,7 +6,7 @@
 | 1 · Condomínios e cadastro do morador | 0.3.0 | concluída |
 | 2 · Locador: minhas vagas e cadastro de vaga | 0.4.0 | concluída |
 | 3 · Explorar e pedir reserva | 0.5.0 | concluída |
-| 4 · Ciclo da reserva | 0.6.0 | pendente |
+| 4 · Ciclo da reserva | 0.6.0 | concluída |
 | 5 · Chat e notificações em tempo real | 0.7.0 | pendente |
 | 6 · Perfil | 0.8.0 | pendente |
 
@@ -263,6 +263,27 @@ navegação cruzada (ex.: "Enviar solicitação" → detalhe da reserva) é feit
 - Testes: regras de transição/cancelamento no domínio (`BookingRules.canCancel/canCheckIn`),
   ViewModels de reservas, detalhe, check-in/out, solicitações, agenda; repositório com cache (fake
   remoto + DAO em memória quando viável).
+
+**Como ficou (diferenças em relação ao plano acima)**
+- Sem pg_cron obrigatório: `settle_bookings()` expira pedidos vencidos e encerra reservas passadas no
+  início de `my_bookings` e de cada RPC do ciclo; o agendamento pelo pg_cron ficou opcional
+  (supabase/README.md). Reserva confirmada que passou sem check-in vira `completed`.
+- Sem a view `owner_month_earnings`: ganhos e reservas do mês são somados no app a partir da lista do
+  locador (`ownerBookingsIn`), que já vem de `my_bookings`.
+- Uma RPC de leitura, `my_bookings`, serve locatário e locador (com `role`, nome/bloco da outra parte,
+  veículo e o conflito dos pedidos pendentes); não há agenda separada no banco.
+- `extend_booking` muda a saída na hora quando o trecho a mais está livre e dentro da disponibilidade,
+  mesmo em vaga com aprovação manual (o locador vê na agenda); não vira pedido.
+- Modelo de reserva, regras (`BookingRules.kt`) e `BookingRepository` ficaram em `core` (Reservas e
+  Minhas vagas usam), e `BookingPeriod`/`BookingQuote`/`shortName` saíram do Explorar para `core`.
+  `feature/bookings` só tem a camada de apresentação.
+- Cache no Room como um JSON por usuário (`booking_cache`, DB v4), não uma tabela por reserva.
+- O detalhe da reserva também atende o locador (aceitar/recusar, cancelar); "Mensagem" e "Relatar
+  problema" ficam de fora até a fase 5/backlog, e as fotos de check-in/out são placeholder.
+- "Preciso de mais tempo" abre uma folha com a nova saída (de 30 em 30 min, sempre depois de agora) e o
+  novo valor. A avaliação pós-uso continua no backlog.
+- Cartão de Minhas vagas ganhou "Agenda" e o número de pedidos; o botão "N solicitações aguardando"
+  leva à prancha 17.
 
 ## Fase 5 — Chat e notificações em tempo real (0.7.0)
 

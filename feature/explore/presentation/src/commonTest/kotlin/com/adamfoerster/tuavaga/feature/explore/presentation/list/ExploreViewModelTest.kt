@@ -1,9 +1,9 @@
 package com.adamfoerster.tuavaga.feature.explore.presentation.list
 
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
 import com.adamfoerster.tuavaga.core.domain.spot.Prices
 import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
 import com.adamfoerster.tuavaga.core.domain.util.DataError
-import com.adamfoerster.tuavaga.feature.explore.domain.BookingPeriod
 import com.adamfoerster.tuavaga.feature.explore.presentation.FakeActiveCondo
 import com.adamfoerster.tuavaga.feature.explore.presentation.FakeCondos
 import com.adamfoerster.tuavaga.feature.explore.presentation.FakeExplore
