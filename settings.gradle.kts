@@ -45,4 +45,4 @@ include(":feature:auth:presentation")
 
 include(":feature:onboarding:presentation")
 
-include(":feature:home:presentation")
+include(":feature:profile:presentation")

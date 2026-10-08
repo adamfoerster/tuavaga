@@ -27,7 +27,8 @@ Uma alteração só está pronta quando cumpre **todos** os itens abaixo, na mes
    ./gradlew verifyVersion testAndroidHostTest :androidApp:assembleDebug :app:wasmJsBrowserDistribution
    ```
    `verifyVersion` falha se versão, CHANGELOG e iOS divergirem. (Não use o `check` global: ele
-   tenta rodar testes wasm/iOS que exigem navegador/macOS.)
+   tenta rodar testes wasm/iOS que exigem navegador/macOS.) Se a mudança tocou `supabase/migrations`,
+   rode também `npm --prefix supabase/tests ci && npm --prefix supabase/tests test`.
 
 ## Convenções
 
@@ -46,7 +47,61 @@ Uma alteração só está pronta quando cumpre **todos** os itens abaixo, na mes
   em `docs/plano-design.md`; siga a ordem e atualize-o ao concluir uma fase.
 - **Segredos**: só em `local.properties` / variáveis de ambiente, lidos via BuildKonfig (`AppConfig`).
   Nunca use a `service_role` key no app.
-- **Room**: alterou entidade → suba a `version` do banco e versione o schema em `core/database/schemas/`.
+- **Room**: alterou entidade → suba a `version` do banco, adicione um `AutoMigration` (para não perder a
+  sessão salva) e versione o schema em `core/database/schemas/`.
+- **Supabase**: migration nova em `supabase/migrations/` (idempotente, com RLS; regras sensíveis em funções
+  `security definer` com `set search_path = ''`, sem `execute` para `anon`). Cubra-a em
+  `supabase/tests/migrations.test.mjs` e rode `npm --prefix supabase/tests test` antes de concluir.
 - **Worker SQLite web** (`core/database/sqlite-worker/worker.js`) é ligado pelo alias em
   `app/webpack.config.d/`; mudanças nele exigem testar a versão web no navegador.
 - iOS não compila no Windows; mudanças em `iosMain`/`iosApp` precisam ser validadas num Mac.
+
+## Como testar
+
+### Migrations (PGlite, sem Docker nem projeto Supabase)
+
+- `supabase/tests/migrations.test.mjs` sobe um Postgres em memória (`@electric-sql/pglite`, versão
+  fixada em `supabase/tests/package.json`) e simula o Supabase: roles `anon`/`authenticated`, schema
+  `auth` com `auth.users` e `auth.uid()` lendo `request.jwt.claim.sub`, e `alter default privileges`
+  dando acesso às tabelas como o Supabase faz.
+- Aplica **todas** as migrations em ordem e reaplica a mais nova (precisa ser idempotente).
+- Para agir como um usuário, o helper `as(uuid)` faz `set role authenticated` + define o `sub`;
+  `as('anon')` testa o acesso anônimo. Use `expectOk(nome, sql, params, check)` e
+  `expectError(nome, sql, params, código)` (ex.: `42501` RLS/permissão, `23505` unique, `23514` check,
+  `22023` erro de validação lançado pelas RPCs).
+- Toda migration nova ganha casos com **dois usuários**: o que cada um vê e o que é negado (RLS),
+  as RPCs no caminho feliz e nos erros, e `anon` sem `execute`.
+- Rodar: `npm --prefix supabase/tests ci` (uma vez) e `npm --prefix supabase/tests test`.
+- Nunca aplique migrations no projeto Supabase do usuário por conta própria; ele aplica no painel.
+
+### ViewModels
+
+- Debounce/tempo: `Dispatchers.setMain(StandardTestDispatcher())`; o `runTest` reaproveita o scheduler
+  do Main, então use `advanceTimeBy` / `advanceUntilIdle`. Sem tempo envolvido, `UnconfinedTestDispatcher`.
+- Fakes ficam no `commonTest` de cada módulo (ex.: `feature/onboarding/.../Fakes.kt`, `app/.../AppFakes.kt`).
+- Regra de navegação do app é função pura (`AppState.area()`, `signedOutStart()`) e se testa sem UI.
+
+### App web no navegador (verificação visual)
+
+- `.claude/launch.json` tem a configuração `web` (`:app:wasmJsBrowserDevelopmentRun`, porta 8080).
+  Não há hot reload: depois de editar, pare e suba o servidor de novo. Espere o bundle responder
+  (`curl -sf http://localhost:8080/tuavaga.js`) antes de abrir.
+- Confira em viewport de celular (375×812) nos temas escuro **e** claro, comparando com as pranchas.
+- **Telas que dependem do backend** (não há conta de teste no Supabase): sobrescreva repositórios só
+  localmente — um arquivo temporário em `app/src/wasmJsMain` com um módulo Koin de fakes e
+  `loadKoinModules(...)` logo após `initKoin()` em `main.kt`. Reverta os dois antes de concluir
+  (`grep -rn TEMPORARY app/src` deve voltar vazio) e nunca faça commit disso.
+- **Zerar o banco local da web** (ex.: rever a introdução): o worker SQLite trava os arquivos OPFS
+  enquanto o app roda. Navegue para uma URL estática da mesma origem (`http://localhost:8080/tuavaga.js`)
+  e apague com `navigator.storage.getDirectory()` + `removeEntry(nome, { recursive: true })`.
+- O canvas do Compose web demora a redesenhar: espere ~1–2 s antes do screenshot e não repita toques
+  achando que falharam (dois toques no seletor abrem e fecham a folha). Conhecido: o primeiro toque
+  logo após escolher um item de `KbSelect` é ignorado.
+
+### Armadilhas do ambiente (Windows / Git Bash)
+
+- Novo módulo KMP altera `kotlin-js-store/wasm/yarn.lock`: rode `./gradlew kotlinWasmUpgradeYarnLock`
+  e confira o diff antes de seguir.
+- Não use crases dentro de `node -e "..."` no bash: elas viram substituição de comando. Para editar
+  texto com crases (Markdown, SQL), use as ferramentas de edição de arquivo.
+- Heredocs longos no Bash às vezes quebram; prefira as ferramentas de escrita de arquivo.

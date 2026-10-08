@@ -84,6 +84,35 @@ fun KbBrandHeader(trailing: (@Composable RowScope.() -> Unit)? = null) {
     }
 }
 
+/**
+ * Header of the wizard screens: back button (when [onBack] is set) and a step meter,
+ * e.g. label "Passo 1 de 2", readout "Condomínio", step 1 of 2.
+ */
+@Composable
+fun KbStepHeader(
+    label: String,
+    readout: String,
+    step: Int,
+    steps: Int,
+    onBack: (() -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (onBack != null) KbIconButton(KbIcons.Back, contentDescription = "Voltar", onClick = onBack)
+        KbMeter(
+            value = step.toFloat() / steps,
+            label = label,
+            readout = readout,
+            segments = steps,
+            redline = 1f,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
 /** Big screen title (`t-lg`) with an optional muted subtitle. */
 @Composable
 fun KbScreenTitle(title: String, subtitle: String? = null) {

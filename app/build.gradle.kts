@@ -41,7 +41,7 @@ kotlin {
             implementation(projects.feature.auth.domain)
             implementation(projects.feature.auth.data)
             implementation(projects.feature.auth.presentation)
-            implementation(projects.feature.home.presentation)
+            implementation(projects.feature.profile.presentation)
             implementation(projects.feature.onboarding.presentation)
 
             implementation(libs.androidx.lifecycle.viewmodel.compose)

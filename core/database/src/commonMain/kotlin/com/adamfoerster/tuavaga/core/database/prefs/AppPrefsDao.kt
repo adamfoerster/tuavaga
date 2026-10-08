@@ -14,4 +14,10 @@ interface AppPrefsDao {
             "ON CONFLICT(id) DO UPDATE SET introSeen = 1",
     )
     suspend fun markIntroSeen()
+
+    @Query(
+        "INSERT INTO app_prefs (id, introSeen, activeCondoId) VALUES (${AppPrefsEntity.SINGLE_ROW_ID}, 0, :condoId) " +
+            "ON CONFLICT(id) DO UPDATE SET activeCondoId = :condoId",
+    )
+    suspend fun setActiveCondo(condoId: String?)
 }

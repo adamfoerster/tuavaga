@@ -2,8 +2,33 @@
 
 ## 1. Banco
 
-Rode `migrations/20261007000000_profiles.sql` no SQL Editor do projeto (ou `supabase db push` com a CLI).
-Ele cria `public.profiles` com RLS e o trigger que preenche o perfil no cadastro.
+Rode as migrations **em ordem** no SQL Editor do projeto (ou `supabase db push` com a CLI):
+
+| Migration | O que cria |
+| --- | --- |
+| `20261007000000_profiles.sql` | `public.profiles` com RLS e o trigger que preenche o perfil no cadastro |
+| `20261008000000_condominiums.sql` | condomínios, andares/setores da garagem, vínculos (`memberships`), veículos, RLS e as RPCs `search_condominiums`, `find_condominium_by_invite`, `condominium_blocks`, `join_condominium`, `create_condominium` |
+
+Regras da fase de condomínios:
+
+- Só membros leem o condomínio e a garagem. Quem ainda não entrou usa as RPCs de busca e de convite,
+  que não expõem membros nem o código de convite.
+- O vínculo só nasce por `join_condominium` / `create_condominium` (insert direto é bloqueado pela RLS);
+  as duas também atualizam nome e telefone em `profiles`.
+- Veículos são do usuário (não do condomínio) e só o dono os vê.
+- As RPCs só podem ser chamadas por usuários logados (`anon` não tem `execute`).
+
+### Testes das migrations
+
+`supabase/tests` aplica todas as migrations num Postgres em memória (PGlite), com um schema `auth`
+simulado, e confere RLS e RPCs com dois usuários. Não precisa de Docker nem de projeto Supabase:
+
+```bash
+npm --prefix supabase/tests ci
+npm --prefix supabase/tests test
+```
+
+Toda migration nova ganha casos em `supabase/tests/migrations.test.mjs`.
 
 ## 2. Auth → Providers → Email
 

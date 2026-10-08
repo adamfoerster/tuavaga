@@ -3,7 +3,7 @@
 | Fase | Versão | Estado |
 | --- | --- | --- |
 | 0 · Design system Kerb + auth | 0.2.0 | concluída |
-| 1 · Condomínios e cadastro do morador | 0.3.0 | pendente |
+| 1 · Condomínios e cadastro do morador | 0.3.0 | concluída |
 | 2 · Locador: minhas vagas e cadastro de vaga | 0.4.0 | pendente |
 | 3 · Explorar e pedir reserva | 0.5.0 | pendente |
 | 4 · Ciclo da reserva | 0.6.0 | pendente |
@@ -124,6 +124,21 @@ navegação cruzada (ex.: "Enviar solicitação" → detalhe da reserva) é feit
   ("Entre num condomínio" etc.). Remove `feature/home`.
 - Testes: `PlateValidator` (ABC1D23 e ABC1234), `InviteCodeValidator`, ViewModels de entrar/criar
   condomínio e cadastro do morador, roteamento inicial (sem condomínio → onboarding).
+
+**Como ficou (diferenças em relação ao plano acima)**
+- Sem `onboarded_at` e sem a view `condo_members`: nenhuma tela da fase 1 mostra outros moradores; a
+  exposição de nome/bloco do locador entra na fase 3 junto com as vagas.
+- `join_condominium` recebe o id (o código é resolvido antes por `find_condominium_by_invite`, que
+  alimenta a prévia). `create_condominium` cria garagem + vínculo numa transação só e recebe também os
+  blocos/torres (campo novo no "Cadastrar meu condomínio", que o design não tinha). Ambas atualizam nome
+  e telefone do perfil. Sair do condomínio é um `delete` direto permitido pela RLS (sem RPC).
+- O condomínio novo só é criado no passo "Seus dados" (o design tem "Criar condomínio" no passo 1).
+- Os passos do fluxo são "1 de 2 / 2 de 2" (o design mostrava "de 3" sem um terceiro passo).
+- Ordenar andares usa "↑" (o design previa arrastar).
+- Vínculos ficam em cache no Room (DB v3) para abrir offline; a navegação passou a ser por áreas
+  (`AppState.area()`), e `feature/home` virou `feature/profile` (Perfil mínimo até a fase 6).
+- Testes SQL em `supabase/tests` (PGlite) cobrem RLS e RPCs.
+- Pendência conhecida: na web, o primeiro toque logo após escolher um item de `KbSelect` é ignorado.
 
 ## Fase 2 — Locador: minhas vagas e cadastro de vaga (0.4.0)
 

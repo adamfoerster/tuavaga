@@ -8,6 +8,59 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-08
+
+### Corrigido
+
+- No Android, bloquear a tela (ou trocar de app) no meio de um fluxo apagava o que tinha sido
+  preenchido e voltava ao início: o supabase-kt marca a sessão como "inicializando" ao ir para segundo
+  plano e o app tratava isso como carregamento, recriando todas as telas. Agora o estado de carregamento
+  só existe na abertura do app.
+
+## [0.3.1] - 2026-10-08
+
+### Alterado
+
+- `CLAUDE.md` ganhou a seção "Como testar": testes das migrations com PGlite, ViewModels com tempo
+  virtual, verificação visual da versão web (inclusive com fakes temporários e como zerar o banco local)
+  e armadilhas do ambiente Windows.
+
+## [0.3.0] - 2026-10-07
+
+### Adicionado
+
+- Migration `20261008000000_condominiums.sql`: condomínios com código de convite, andares e setores da
+  garagem, vínculos do morador (bloco, unidade, morador/trabalho), veículos, telefone no perfil, RLS e as
+  RPCs de busca, convite, entrada e criação de condomínio.
+- Testes das migrations em `supabase/tests` (Postgres em memória com PGlite): RLS entre dois usuários,
+  RPCs, bloqueio para `anon` e reaplicação idempotente.
+- Fluxo "Entrar no condomínio": busca por nome ou endereço, código de convite (com erros de formato e
+  de código não encontrado) e "Cadastrar meu condomínio" com garagem (andares, setores e blocos/torres).
+- "Seus dados no condomínio": nome, bloco, unidade, telefone, vínculo e veículos (placa antiga ou
+  Mercosul), com aceite dos termos.
+- Telas principais com seletor de condomínio ativo, troca e "Adicionar outro condomínio", e a tab bar
+  (Explorar, Reservas, Minhas vagas, Mensagens, Perfil). Explorar mostra o estado "Seja o primeiro" com
+  o código de convite; as demais abas indicam o que vem nas próximas versões.
+- Aba Perfil com identidade e "Sair da conta".
+- Componentes Kerb: ícones do design, botão de ícone, tab bar, item de lista selecionável, cabeçalho de
+  seção e cabeçalho de passos.
+- Tela "Sem conexão" quando os condomínios não carregam no primeiro acesso.
+
+### Alterado
+
+- Navegação dividida em áreas (sem sessão, onboarding e principal), decididas pelo estado da sessão e
+  dos condomínios.
+- Banco local na versão 3: cache dos condomínios do usuário (o app abre offline) e condomínio ativo.
+- Rótulos longos de botão diminuem para caber em vez de serem cortados.
+
+### Removido
+
+- Módulo `feature/home` (substituído pela aba Perfil em `feature/profile`).
+
+### Corrigido
+
+- Menu do `KbSelect` com a largura do campo (antes ficava estreito e sobreposto ao conteúdo).
+
 ## [0.2.0] - 2026-10-07
 
 ### Adicionado

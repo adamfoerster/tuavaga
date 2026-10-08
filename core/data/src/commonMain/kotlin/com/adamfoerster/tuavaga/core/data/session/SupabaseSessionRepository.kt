@@ -16,6 +16,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -28,22 +29,8 @@ internal class SupabaseSessionRepository(
     private val userDao: UserDao,
 ) : SessionRepository {
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override val sessionState: Flow<SessionState> = auth.sessionStatus
-        .flatMapLatest { status ->
-            when (status) {
-                SessionStatus.Initializing -> flowOf(SessionState.Loading)
-                is SessionStatus.NotAuthenticated -> flowOf(SessionState.SignedOut)
-                // Refresh failed (usually offline) but tokens are still stored: keep the user in.
-                is SessionStatus.RefreshFailure -> auth.currentUserOrNull()
-                    ?.let { observeUser(it) }
-                    ?: flowOf(SessionState.SignedOut)
-                is SessionStatus.Authenticated -> status.session.user
-                    ?.let { observeUser(it) }
-                    ?: flowOf(SessionState.Loading)
-            }
-        }
-        .distinctUntilChanged()
+        .toSessionState(currentUser = auth::currentUserOrNull, observeUser = ::observeUser)
 
     /** Mirrors the Supabase user into Room and exposes the local copy. */
     private fun observeUser(info: UserInfo): Flow<SessionState> {
@@ -68,6 +55,31 @@ internal class SupabaseSessionRepository(
         return result
     }
 }
+
+/**
+ * Maps supabase-kt's session status to the app's [SessionState].
+ *
+ * [SessionState.Loading] is emitted only once, before the first real status. Later
+ * [SessionStatus.Initializing] emissions are ignored: on Android supabase-kt sets it whenever the app
+ * goes to the background (screen locked, app switched) and reloads the session on return. Reporting
+ * Loading there made the root swap the whole UI and lose every screen's state (e.g. a half-filled form).
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun Flow<SessionStatus>.toSessionState(
+    currentUser: () -> UserInfo?,
+    observeUser: (UserInfo) -> Flow<SessionState>,
+): Flow<SessionState> = flatMapLatest { status ->
+    when (status) {
+        SessionStatus.Initializing -> emptyFlow()
+        is SessionStatus.NotAuthenticated -> flowOf(SessionState.SignedOut)
+        // Refresh failed (usually offline) but tokens are still stored: keep the user in.
+        is SessionStatus.RefreshFailure -> currentUser()?.let(observeUser) ?: flowOf(SessionState.SignedOut)
+        // A session without user info keeps whatever was known until the next status.
+        is SessionStatus.Authenticated -> (status.session.user ?: currentUser())?.let(observeUser) ?: emptyFlow()
+    }
+}
+    .onStart { emit(SessionState.Loading) }
+    .distinctUntilChanged()
 
 private fun UserInfo.toEntity() = UserEntity(
     id = id,

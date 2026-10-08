@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.runtime.Composable
@@ -22,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,6 +50,8 @@ fun <T> KbSelect(
     val colors = KerbTheme.colors
     val typography = KerbTheme.typography
     var expanded by remember { mutableStateOf(false) }
+    var anchorWidth by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
     val current = options.firstOrNull { it.value == selected }
     val shape = RoundedCornerShape(2.dp)
 
@@ -56,6 +61,7 @@ fun <T> KbSelect(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .onSizeChanged { anchorWidth = it.width }
                     .focusRing(expanded, colors.telemetry)
                     .height(44.dp)
                     .background(colors.surfaceSunken, shape)
@@ -84,6 +90,8 @@ fun <T> KbSelect(
             DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
+                // Same width as the field, like the design's kb-menu under a select.
+                modifier = Modifier.width(with(density) { anchorWidth.toDp() }),
                 shape = RoundedCornerShape(4.dp),
                 containerColor = colors.surfaceRaised,
                 border = BorderStroke(2.dp, colors.lineStrong),

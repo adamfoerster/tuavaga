@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -95,16 +97,18 @@ fun KbButton(
                 strokeWidth = 2.dp,
             )
         } else {
-            KbText(
+            // Long labels on narrow phones shrink instead of being clipped.
+            BasicText(
                 text = text.uppercase(),
                 style = KerbTheme.typography.sm.copy(
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = size.fontSize,
                     lineHeight = size.fontSize,
                     letterSpacing = 0.06.em,
+                    color = content,
                 ),
-                color = content,
                 maxLines = 1,
+                autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = size.fontSize),
             )
         }
     }

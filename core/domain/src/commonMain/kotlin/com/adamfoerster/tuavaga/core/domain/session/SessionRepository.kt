@@ -17,6 +17,10 @@ interface SessionRepository {
 }
 
 sealed interface SessionState {
+    /**
+     * Only while the stored session is read at startup. Never emitted again afterwards (e.g. when the
+     * app goes to the background), so the UI is not torn down and screens keep their state.
+     */
     data object Loading : SessionState
     data object SignedOut : SessionState
     data class SignedIn(val user: User) : SessionState
