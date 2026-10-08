@@ -50,6 +50,9 @@ await db.exec(`
   alter default privileges in schema public grant all on tables to anon, authenticated;
   alter default privileges in schema public grant usage on types to anon, authenticated;
 `);
+// Supabase's Realtime publication (the messages/notifications migration adds its tables to it).
+let hasPublication = true;
+try { await db.exec('create publication supabase_realtime'); } catch { hasPublication = false; }
 
 // --- Migrations --------------------------------------------------------------------------------
 const files = readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort();
@@ -368,6 +371,95 @@ await as('anon');
 await expectError('anon cannot list bookings', 'select * from public.my_bookings()', [], 'permission denied');
 await expectError('anon cannot cancel', cancel(live), [], 'permission denied');
 await db.exec('reset role');
+
+// --- Fase 5: chat e notificações ------------------------------------------------------------
+console.log('\n# messages and notifications');
+const say = (booking, sender, body, kind = 'text') =>
+  `insert into public.messages (booking_id, sender_id, kind, body) values ('${booking}', ${sender ? `'${sender}'` : 'null'}, '${kind}', '${body}')`;
+const notes = (where = 'true') => `select kind, title, body, read_at, booking_id from public.notifications where ${where} order by created_at`;
+
+await as(U2);
+const chat = (await expectOk('a new request', book(spotM, dayAt(3, '09:00'), dayAt(3, '11:00'), 'hour')))?.[0]?.id;
+await expectOk('the note opens the conversation', 'select kind, body, sender_id from public.messages where booking_id = $1', [chat],
+  (r) => r.length === 1 && r[0].kind === 'text' && r[0].body === 'Chego cedo' && r[0].sender_id === U2 ? null : JSON.stringify(r));
+
+await as(U1);
+await expectOk('owner is notified of the request', notes(`booking_id = '${chat}'`), [],
+  (r) => r.length === 1 && r[0].kind === 'request' && r[0].title === 'Marina R. pediu a vaga C2-31' && r[0].body.includes('Responda até')
+    ? null : JSON.stringify(r));
+await expectOk('owner answers in the chat', say(chat, U1, 'Pode vir, a vaga é a terceira.'));
+await expectError('nobody writes as someone else', say(chat, U2, 'Fingindo ser a Marina'), [], 'row-level security');
+await expectError('users cannot write system messages', say(chat, null, 'CHECK-IN · 08:00', 'system'), [], 'row-level security');
+await db.query(`update public.messages set body = 'editada' where booking_id = '${chat}'`);
+await expectOk('messages cannot be edited', `select count(*)::int n from public.messages where body = 'editada'`, [], (r) => r[0].n === 0 ? null : 'edited');
+
+await as(U3);
+await expectOk('outsider reads no messages', `select * from public.messages where booking_id = '${chat}'`, [], (r) => r.length === 0 ? null : 'rows=' + r.length);
+await expectError('outsider cannot write', say(chat, U3, 'Oi'), [], 'row-level security');
+await expectOk('outsider has no conversations', 'select * from public.my_conversations()', [], (r) => r.length === 0 ? null : 'rows=' + r.length);
+
+await as(U2);
+await expectOk('renter conversation with the owner reply unread', 'select * from public.my_conversations() where booking_id = $1', [chat],
+  (r) => r[0]?.unread === 1 && r[0].last_body === 'Pode vir, a vaga é a terceira.' && r[0].last_mine === false
+    && r[0].counterpart_name === 'Adam Foerster' && r[0].spot_label === 'C2-31' && r[0].role === 'renter' ? null : JSON.stringify(r));
+await expectOk('mark the conversation read', `select public.mark_messages_read('${chat}')`);
+await expectOk('nothing unread', 'select unread from public.my_conversations() where booking_id = $1', [chat], (r) => r[0].unread === 0 ? null : JSON.stringify(r));
+await as(U1);
+await expectOk('owner still has the note unread', 'select unread from public.my_conversations() where booking_id = $1', [chat], (r) => r[0].unread === 1 ? null : JSON.stringify(r));
+await expectOk('approve', approve(chat));
+await as(U2);
+await expectOk('renter is notified of the approval', notes(`booking_id = '${chat}'`), [],
+  (r) => r.length === 1 && r[0].kind === 'approved' && r[0].title === 'Sua reserva da vaga C2-31 foi aprovada' ? null : JSON.stringify(r));
+await expectOk('system message in the chat', `select body from public.messages where booking_id = '${chat}' and kind = 'system'`, [],
+  (r) => r.length === 1 && r[0].body === 'RESERVA CONFIRMADA' ? null : JSON.stringify(r));
+await expectOk('earlier rejection was notified with the reason', notes(`kind = 'rejected'`), [],
+  (r) => r.length === 1 && r[0].title === 'Adam F. recusou a vaga C2-31' && r[0].body.startsWith('Motivo: vaga reservada para visita') ? null : JSON.stringify(r));
+await expectOk('owner cancellation was notified', notes(`kind = 'cancelled' and booking_id = '${p1}'`), [],
+  (r) => r.length === 1 && r[0].title === 'Adam F. cancelou a reserva da vaga C2-31' ? null : JSON.stringify(r));
+await expectOk('unanswered request was notified', notes(`kind = 'expired'`), [], (r) => r.length === 1 ? null : JSON.stringify(r));
+await expectOk('check-in, extension and check-out are in the chat', `select body from public.messages where booking_id = '${live}' and kind = 'system' order by created_at`, [],
+  (r) => r.length === 3 && r[0].body.startsWith('CHECK-IN · ') && r[1].body.startsWith('SAÍDA AJUSTADA PARA ') && r[2].body.startsWith('CHECK-OUT · ')
+    ? null : JSON.stringify(r));
+await expectOk('renter only sees their notifications', notes(), [], (r) => r.length > 0 && !r.some((x) => x.kind === 'request' || x.kind === 'booked') ? null : JSON.stringify(r.map((x) => x.kind)));
+await expectOk('mark notifications read', `select public.mark_notifications_read(null)`);
+await expectOk('all read', notes('read_at is null'), [], (r) => r.length === 0 ? null : 'unread=' + r.length);
+await as(U1);
+await expectOk('marking read is per user', notes('read_at is null'), [], (r) => r.length > 0 ? null : 'owner lost unread');
+await expectOk('mark one condominium read', `select public.mark_notifications_read('${condoId}')`);
+await expectOk('owner notifications read', notes('read_at is null'), [], (r) => r.length === 0 ? null : 'unread=' + r.length);
+await expectError('notifications cannot be inserted directly', `insert into public.notifications (user_id, condo_id, kind, title, body) values ('${U1}', '${condoId}', 'late', 'x', 'y')`, [], 'row-level security');
+
+// Reminder (check-in within 24 h) and lateness (15 min past the exit), once each.
+await db.exec('reset role');
+const soonId = (await db.query(`insert into public.bookings
+  (spot_id, condo_id, owner_id, renter_id, starts_at, ends_at, billing_unit, units, unit_price_cents, total_cents, status)
+  values ($1, $2, $3, $4, now() + interval '3 hours', now() + interval '5 hours', 'hour', 2, 800, 1600, 'confirmed') returning id`,
+  [spotA, condoId, U1, U2])).rows[0].id;
+const lateId = (await db.query(`insert into public.bookings
+  (spot_id, condo_id, owner_id, renter_id, starts_at, ends_at, billing_unit, units, unit_price_cents, total_cents, status, checked_in_at)
+  values ($1, $2, $3, $4, now() - interval '3 hours', now() - interval '20 minutes', 'hour', 3, 800, 2400, 'in_progress', now() - interval '3 hours') returning id`,
+  [spotA, condoId, U1, U2])).rows[0].id;
+await as(U2);
+await db.query('select * from public.my_bookings()');
+await db.query('select * from public.my_bookings()');
+await expectOk('one check-in reminder per booking', notes(`kind = 'reminder' and booking_id = '${soonId}'`), [],
+  (r) => r.length === 1 && r[0].booking_id === soonId && r[0].title.startsWith('Check-in libera ') ? null : JSON.stringify(r));
+await as(U1);
+await expectOk('one lateness warning for the owner', notes(`kind = 'late'`), [],
+  (r) => r.length === 1 && r[0].booking_id === lateId && r[0].title === 'Marina R. passou do horário na vaga A2-30' ? null : JSON.stringify(r));
+
+await as('anon');
+await expectOk('anon reads no messages', 'select * from public.messages', [], (r) => r.length === 0 ? null : 'rows=' + r.length);
+await expectOk('anon reads no notifications', 'select * from public.notifications', [], (r) => r.length === 0 ? null : 'rows=' + r.length);
+await expectError('anon has no conversations', 'select * from public.my_conversations()', [], 'permission denied');
+await expectError('anon cannot mark read', `select public.mark_notifications_read(null)`, [], 'permission denied');
+await db.exec('reset role');
+if (hasPublication) {
+  await expectOk('tables published for Realtime', `select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by tablename`, [],
+    (r) => r.map((x) => x.tablename).join(',') === 'messages,notifications' ? null : JSON.stringify(r));
+} else {
+  console.log('  skip Realtime publication (not supported by PGlite)');
+}
 
 console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL PASSED');
 process.exit(failures ? 1 : 0);

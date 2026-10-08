@@ -6,6 +6,7 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.SessionManager
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.realtime.Realtime
 
 internal object SupabaseClientFactory {
 
@@ -24,6 +25,7 @@ internal object SupabaseClientFactory {
                 autoSaveToStorage = true
             }
             install(Postgrest)
+            install(Realtime)
         }
     }
 }

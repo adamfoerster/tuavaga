@@ -8,6 +8,29 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-08
+
+### Adicionado
+
+- Migration `20261012000000_messages_notifications.sql`: chat de cada reserva e notificações, com RLS
+  (só as partes da reserva leem e escrevem no chat; cada um lê as suas notificações), avisos e mensagens
+  de sistema gerados a cada mudança da reserva, lembrete na véspera do check-in, aviso de atraso ao
+  locador, as RPCs `my_conversations`, `mark_messages_read` e `mark_notifications_read`, e as tabelas na
+  publicação do Supabase Realtime.
+- Aba Mensagens com uma conversa por reserva (última mensagem e não lidas) e chat da reserva com
+  respostas rápidas, envio imediato na tela e "Tentar de novo" quando falha.
+- Central de notificações: filtro por condomínio, agrupada em Hoje/Ontem, "Marcar como lidas" e abre a
+  reserva do aviso.
+- Sino com contador ao lado do seletor de condomínio, "N novas" por condomínio na troca e contador na
+  aba Mensagens.
+- Botão "Mensagem" no detalhe da reserva.
+- Supabase Realtime no app (`realtime-kt`): listas ao vivo que recarregam a cada mudança e reconectam
+  sozinhas quando a conexão volta.
+
+### Removido
+
+- Aba "em breve" de Mensagens (todas as abas agora têm conteúdo).
+
 ## [0.6.0] - 2026-10-08
 
 ### Adicionado

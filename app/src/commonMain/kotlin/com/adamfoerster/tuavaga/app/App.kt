@@ -39,6 +39,10 @@ import com.adamfoerster.tuavaga.feature.hosting.presentation.navigation.AgendaRo
 import com.adamfoerster.tuavaga.feature.hosting.presentation.navigation.RequestsRoute
 import com.adamfoerster.tuavaga.feature.hosting.presentation.navigation.SpotWizardRoute
 import com.adamfoerster.tuavaga.feature.hosting.presentation.navigation.hostingGraph
+import com.adamfoerster.tuavaga.feature.messages.presentation.navigation.ChatRoute
+import com.adamfoerster.tuavaga.feature.messages.presentation.navigation.messagesGraph
+import com.adamfoerster.tuavaga.feature.notifications.presentation.navigation.NotificationsRoute
+import com.adamfoerster.tuavaga.feature.notifications.presentation.navigation.notificationsGraph
 import com.adamfoerster.tuavaga.feature.onboarding.presentation.navigation.CondoOnboardingGraph
 import com.adamfoerster.tuavaga.feature.onboarding.presentation.navigation.IntroRoute
 import com.adamfoerster.tuavaga.feature.onboarding.presentation.navigation.condoOnboardingGraph
@@ -118,6 +122,7 @@ private fun MainArea() {
     // Set by screens outside the shell that send the user to one of its tabs.
     var requestedTab by remember { mutableStateOf<MainTab?>(null) }
     val openBooking = { bookingId: String -> navController.navigate(BookingDetailRoute(bookingId)) }
+    val openChat = { bookingId: String -> navController.navigate(ChatRoute(bookingId)) }
     val backToExplore = {
         navController.popBackStack(MainRoute, inclusive = false)
         requestedTab = MainTab.EXPLORE
@@ -133,13 +138,17 @@ private fun MainArea() {
                     onOpenBooking = openBooking,
                     onRequests = { navController.navigate(RequestsRoute) },
                     onAgenda = { spotId -> navController.navigate(AgendaRoute(spotId)) },
+                    onNotifications = { navController.navigate(NotificationsRoute) },
+                    onOpenChat = openChat,
                 ),
                 requestedTab = requestedTab,
                 onTabRequestHandled = { requestedTab = null },
             )
         }
         hostingGraph(navController, onOpenBooking = openBooking)
-        bookingsGraph(navController, onExplore = backToExplore)
+        bookingsGraph(navController, onExplore = backToExplore, onOpenChat = openChat)
+        messagesGraph(navController, onOpenBooking = openBooking)
+        notificationsGraph(navController, onOpenBooking = openBooking)
         exploreGraph(
             navController,
             onFinished = { navController.popBackStack(MainRoute, inclusive = false) },

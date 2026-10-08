@@ -49,6 +49,12 @@ kotlin {
             implementation(projects.feature.hosting.domain)
             implementation(projects.feature.hosting.data)
             implementation(projects.feature.hosting.presentation)
+            implementation(projects.feature.messages.domain)
+            implementation(projects.feature.messages.data)
+            implementation(projects.feature.messages.presentation)
+            implementation(projects.feature.notifications.domain)
+            implementation(projects.feature.notifications.data)
+            implementation(projects.feature.notifications.presentation)
             implementation(projects.feature.onboarding.presentation)
 
             implementation(libs.androidx.lifecycle.viewmodel.compose)

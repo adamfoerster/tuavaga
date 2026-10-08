@@ -16,6 +16,7 @@ kotlin {
             api(project.dependencies.platform(libs.supabase.bom))
             api(libs.supabase.auth)
             api(libs.supabase.postgrest)
+            api(libs.supabase.realtime)
             implementation(libs.kotlinx.serialization.json)
 
             implementation(project.dependencies.platform(libs.koin.bom))

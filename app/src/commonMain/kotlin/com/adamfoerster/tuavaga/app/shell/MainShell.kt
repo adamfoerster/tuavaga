@@ -19,9 +19,11 @@ import com.adamfoerster.tuavaga.core.designsystem.components.KbIcons
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTab
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTabBar
 import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.time.appToday
 import com.adamfoerster.tuavaga.feature.bookings.presentation.list.BookingsRoot
 import com.adamfoerster.tuavaga.feature.explore.presentation.list.ExploreRoot
 import com.adamfoerster.tuavaga.feature.hosting.presentation.myspots.MySpotsRoot
+import com.adamfoerster.tuavaga.feature.messages.presentation.list.ConversationsRoot
 import com.adamfoerster.tuavaga.feature.profile.presentation.ProfileRoot
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -43,6 +45,8 @@ class ShellNavigation(
     val onOpenBooking: (bookingId: String) -> Unit,
     val onRequests: () -> Unit,
     val onAgenda: (spotId: String) -> Unit,
+    val onNotifications: () -> Unit,
+    val onOpenChat: (bookingId: String) -> Unit,
 )
 
 @Composable
@@ -82,7 +86,12 @@ fun MainShellScreen(
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(modifier = Modifier.fillMaxSize().widthIn(max = 480.dp).safeDrawingPadding()) {
-            CondoSelectorBar(active = state.active, onClick = { onAction(ShellAction.OnOpenSwitcher) })
+            CondoSelectorBar(
+                active = state.active,
+                unread = state.unreadNotifications,
+                onClick = { onAction(ShellAction.OnOpenSwitcher) },
+                onNotifications = navigation.onNotifications,
+            )
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when (state.tab) {
                     MainTab.EXPLORE -> ExploreRoot(onOpenSpot = navigation.onOpenSpot, onListSpot = createInActiveCondo)
@@ -97,19 +106,21 @@ fun MainShellScreen(
                         onRequests = navigation.onRequests,
                         onWantSpot = { onAction(ShellAction.OnTabSelect(MainTab.EXPLORE)) },
                     )
-                    MainTab.MESSAGES -> ComingSoonTab(
-                        title = "Mensagens",
-                        text = "As conversas com vizinhos sobre cada reserva vão ficar aqui.",
-                    )
+                    MainTab.MESSAGES -> ConversationsRoot(onOpenChat = navigation.onOpenChat, today = appToday())
                     MainTab.PROFILE -> ProfileRoot()
                 }
             }
-            KbTabBar(tabs = tabs, selected = state.tab, onSelect = { onAction(ShellAction.OnTabSelect(it)) })
+            KbTabBar(
+                tabs = tabs.map { if (it.value == MainTab.MESSAGES) it.copy(badge = state.unreadMessages) else it },
+                selected = state.tab,
+                onSelect = { onAction(ShellAction.OnTabSelect(it)) },
+            )
         }
         if (state.isSwitcherOpen) {
             CondoSwitcherSheet(
                 memberships = state.memberships,
                 activeId = state.active?.condo?.id,
+                unreadByCondo = state.unreadByCondo,
                 onSelect = { onAction(ShellAction.OnCondoSelect(it)) },
                 onAddCondo = { onAction(ShellAction.OnAddCondoClick) },
                 onDismiss = { onAction(ShellAction.OnCloseSwitcher) },

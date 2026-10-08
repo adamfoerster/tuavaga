@@ -59,6 +59,10 @@ Uma alteração só está pronta quando cumpre **todos** os itens abaixo, na mes
 - **Worker SQLite web** (`core/database/sqlite-worker/worker.js`) é ligado pelo alias em
   `app/webpack.config.d/`; mudanças nele exigem testar a versão web no navegador.
 - iOS não compila no Windows; mudanças em `iosMain`/`iosApp` precisam ser validadas num Mac.
+- `commonMain`/`commonTest` não têm APIs só da JVM (`toSortedMap`, `assert`, `String.format`…): o Android
+  compila e a web quebra. Compile também `:modulo:compileKotlinWasmJs` ao usar algo menos comum.
+- **Tempo real**: telas ao vivo usam `RealtimeChanges.liveQuery` (core/data). Nos testes, o fake do
+  repositório expõe um `MutableStateFlow` de `Result` e o teste muda o valor como o Realtime faria.
 
 ## Como testar
 

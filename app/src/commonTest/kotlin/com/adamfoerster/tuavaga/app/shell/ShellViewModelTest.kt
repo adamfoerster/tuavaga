@@ -2,7 +2,13 @@ package com.adamfoerster.tuavaga.app.shell
 
 import com.adamfoerster.tuavaga.app.FakeActiveCondo
 import com.adamfoerster.tuavaga.app.FakeCondos
+import com.adamfoerster.tuavaga.app.FakeMessages
+import com.adamfoerster.tuavaga.app.FakeNotifications
+import com.adamfoerster.tuavaga.app.conversation
 import com.adamfoerster.tuavaga.app.membership
+import com.adamfoerster.tuavaga.app.notification
+import com.adamfoerster.tuavaga.core.domain.util.DataError
+import com.adamfoerster.tuavaga.core.domain.util.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -20,6 +26,8 @@ class ShellViewModelTest {
 
     private lateinit var condos: FakeCondos
     private lateinit var active: FakeActiveCondo
+    private lateinit var notifications: FakeNotifications
+    private lateinit var messages: FakeMessages
     private lateinit var viewModel: ShellViewModel
 
     @BeforeTest
@@ -27,12 +35,31 @@ class ShellViewModelTest {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         condos = FakeCondos().apply { memberships.value = listOf(membership("c1"), membership("c2")) }
         active = FakeActiveCondo()
-        viewModel = ShellViewModel(condos, active)
+        notifications = FakeNotifications()
+        messages = FakeMessages()
+        viewModel = ShellViewModel(condos, active, notifications, messages)
     }
 
     @AfterTest
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun unreadCountsForTheBellTheSwitcherAndTheMessagesTab() {
+        notifications.notifications.value = Result.Success(
+            listOf(notification("n1", "c1"), notification("n2", "c2"), notification("n3", "c2"), notification("n4", "c1", read = true)),
+        )
+        messages.conversations.value = Result.Success(listOf(conversation("b1", unread = 2), conversation("b2", unread = 1)))
+
+        val state = viewModel.state.value
+        assertEquals(3, state.unreadNotifications)
+        assertEquals(mapOf("c1" to 1, "c2" to 2), state.unreadByCondo)
+        assertEquals(3, state.unreadMessages)
+
+        // A failed reload keeps the last counts.
+        notifications.notifications.value = Result.Failure(DataError.Remote.NO_INTERNET)
+        assertEquals(3, viewModel.state.value.unreadNotifications)
     }
 
     @Test

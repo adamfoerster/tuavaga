@@ -40,6 +40,7 @@ sealed interface BookingDetailAction {
     data object OnBackClick : BookingDetailAction
     data object OnCheckInClick : BookingDetailAction
     data object OnCheckOutClick : BookingDetailAction
+    data object OnMessageClick : BookingDetailAction
 
     /** Rejected, cancelled or expired: look for another spot. */
     data object OnExploreClick : BookingDetailAction

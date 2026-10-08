@@ -12,6 +12,7 @@ Rode as migrations **em ordem** no SQL Editor do projeto (ou `supabase db push` 
 | `20261010000000_spot_details.sql` | características (`features`), pé-direito (`height_cm`) e "como chegar" (`directions`) da vaga; `save_spot` passa a recebê-los |
 | `20261010000100_bookings.sql` | extensão `btree_gist`, reservas (`bookings`) com código sequencial e trava contra sobreposição, RLS e as RPCs `search_spots`, `spot_busy_ranges` e `request_booking` |
 | `20261011000000_booking_lifecycle.sql` | ciclo da reserva: colunas de cancelamento e check-in/out, `my_bookings` (lista do locatário e do locador) e as RPCs `approve_booking`, `reject_booking`, `cancel_booking`, `check_in`, `check_out`, `extend_booking` |
+| `20261012000000_messages_notifications.sql` | chat (`messages`) e notificações (`notifications`) com RLS, gatilho que gera avisos e mensagens de sistema a cada mudança da reserva, lembrete de check-in e aviso de atraso, as RPCs `my_conversations`, `mark_messages_read`, `mark_notifications_read`, e a publicação no Realtime |
 
 Regras da fase de condomínios:
 
@@ -67,6 +68,20 @@ Regras do ciclo da reserva:
   ```sql
   select cron.schedule('settle-bookings', '*/5 * * * *', 'select public.settle_bookings()');
   ```
+
+Regras do chat e das notificações:
+
+- Mensagens: só locatário e locador da reserva leem e escrevem; o insert é direto na tabela, sempre
+  com `sender_id` = o próprio usuário e `kind = 'text'`. Não há edição nem exclusão. Mensagens de
+  sistema ("CHECK-IN · 08:02", "RESERVA CONFIRMADA"…) e a observação do pedido (primeira mensagem) vêm do
+  gatilho `bookings_events`.
+- Notificações: cada usuário só lê as suas; nascem do gatilho (pedido, reserva confirmada na hora,
+  aprovada, recusada com o motivo, cancelada, sem resposta) e de `settle_bookings` (lembrete na véspera do
+  check-in e atraso 15 min após a saída, uma vez por reserva). "Marcar como lidas" é
+  `mark_notifications_read` (todas ou de um condomínio).
+- Realtime: a migration adiciona `messages` e `notifications` à publicação `supabase_realtime` (se ela
+  existir). Confira em **Database → Publications** que as duas tabelas estão marcadas; o Realtime aplica a
+  RLS, então cada usuário só recebe o que pode ler.
 
 ### Testes das migrations
 

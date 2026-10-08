@@ -1,5 +1,8 @@
 package com.adamfoerster.tuavaga.app
 
+import com.adamfoerster.tuavaga.core.domain.booking.BookingPeriod
+import com.adamfoerster.tuavaga.core.domain.booking.BookingRole
+import com.adamfoerster.tuavaga.core.domain.booking.BookingStatus
 import com.adamfoerster.tuavaga.core.domain.condo.ActiveCondoRepository
 import com.adamfoerster.tuavaga.core.domain.condo.CondoError
 import com.adamfoerster.tuavaga.core.domain.condo.CondoPreview
@@ -17,7 +20,16 @@ import com.adamfoerster.tuavaga.core.domain.user.User
 import com.adamfoerster.tuavaga.core.domain.util.DataError
 import com.adamfoerster.tuavaga.core.domain.util.EmptyResult
 import com.adamfoerster.tuavaga.core.domain.util.Result
+import com.adamfoerster.tuavaga.feature.messages.domain.ChatMessage
+import com.adamfoerster.tuavaga.feature.messages.domain.Conversation
+import com.adamfoerster.tuavaga.feature.messages.domain.MessagesRepository
+import com.adamfoerster.tuavaga.feature.notifications.domain.AppNotification
+import com.adamfoerster.tuavaga.feature.notifications.domain.NotificationKind
+import com.adamfoerster.tuavaga.feature.notifications.domain.NotificationsRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.datetime.LocalDateTime
 
 fun membership(id: String, name: String = "Condo $id") = Membership(
     condo = Condominium(id, name, "Rua $id", null, listOf("A", "B"), "AV-4K7Q"),
@@ -74,3 +86,27 @@ class FakeActiveCondo(initial: String? = null) : ActiveCondoRepository {
         activeCondoId.value = condoId
     }
 }
+
+class FakeNotifications : NotificationsRepository {
+    override val notifications = MutableStateFlow<Result<List<AppNotification>, DataError.Remote>>(Result.Success(emptyList()))
+    override suspend fun markRead(condoId: String?): EmptyResult<DataError.Remote> = Result.Success(Unit)
+}
+
+class FakeMessages : MessagesRepository {
+    override val conversations = MutableStateFlow<Result<List<Conversation>, DataError.Remote>>(Result.Success(emptyList()))
+    override fun messages(bookingId: String): Flow<Result<List<ChatMessage>, DataError.Remote>> = flowOf(Result.Success(emptyList()))
+    override suspend fun send(bookingId: String, body: String): EmptyResult<DataError.Remote> = Result.Success(Unit)
+    override suspend fun markRead(bookingId: String): EmptyResult<DataError.Remote> = Result.Success(Unit)
+}
+
+fun notification(id: String, condoId: String, read: Boolean = false) = AppNotification(
+    id = id, kind = NotificationKind.REQUEST, condoId = condoId, bookingId = null, title = "t", body = "b",
+    at = LocalDateTime(2026, 10, 8, 14, 0), isRead = read,
+)
+
+fun conversation(bookingId: String, unread: Int) = Conversation(
+    bookingId = bookingId, code = 4821, role = BookingRole.RENTER, status = BookingStatus.CONFIRMED, condoId = "c1",
+    condoName = "Condo", spotLabel = "B2-27",
+    period = BookingPeriod(LocalDateTime(2026, 10, 10, 8, 0), LocalDateTime(2026, 10, 10, 18, 0)),
+    counterpartName = "Marina Ribeiro", last = null, unread = unread,
+)

@@ -150,7 +150,7 @@ internal class SupabaseCondoRepository(
  * of the session sees Loading first, and reading it as "no user" made `first()` callers get an empty
  * membership list (empty condominium dropdown) or fail with UNAUTHORIZED right after sign-in.
  */
-internal fun Flow<SessionState>.signedInUserId(): Flow<String?> =
+fun Flow<SessionState>.signedInUserId(): Flow<String?> =
     filter { it != SessionState.Loading }
         .map { (it as? SessionState.SignedIn)?.user?.id }
         .distinctUntilChanged()

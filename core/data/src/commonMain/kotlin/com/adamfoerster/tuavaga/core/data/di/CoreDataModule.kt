@@ -4,6 +4,8 @@ import com.adamfoerster.tuavaga.core.data.booking.SupabaseBookingRepository
 import com.adamfoerster.tuavaga.core.data.condo.SupabaseCondoRepository
 import com.adamfoerster.tuavaga.core.data.prefs.RoomActiveCondoRepository
 import com.adamfoerster.tuavaga.core.data.prefs.RoomAppPreferencesRepository
+import com.adamfoerster.tuavaga.core.data.realtime.RealtimeChanges
+import com.adamfoerster.tuavaga.core.data.realtime.SupabaseRealtimeChanges
 import com.adamfoerster.tuavaga.core.data.session.SupabaseSessionRepository
 import com.adamfoerster.tuavaga.core.data.supabase.RoomSessionManager
 import com.adamfoerster.tuavaga.core.data.supabase.SupabaseClientFactory
@@ -20,6 +22,9 @@ import io.github.jan.supabase.auth.SessionManager
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -34,4 +39,7 @@ val coreDataModule = module {
     single { SupabaseCondoRepository(get(), get(), get()) } bind CondoRepository::class
     single { SupabaseVehicleRepository(get()) } bind VehicleRepository::class
     single { SupabaseBookingRepository(get(), get(), get()) } bind BookingRepository::class
+    single<RealtimeChanges> { SupabaseRealtimeChanges(get()) }
+    // Scope of the shared live flows (notifications, conversations): lives as long as the app.
+    single { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
 }

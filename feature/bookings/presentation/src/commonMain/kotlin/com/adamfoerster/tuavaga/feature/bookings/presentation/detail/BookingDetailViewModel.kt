@@ -56,7 +56,7 @@ class BookingDetailViewModel(
                 run(close = { it.copy(rejecting = null) }) { bookingRepository.reject(bookingId, reason, draft.message) }
             }
             BookingDetailAction.OnBackClick, BookingDetailAction.OnCheckInClick,
-            BookingDetailAction.OnCheckOutClick, BookingDetailAction.OnExploreClick,
+            BookingDetailAction.OnCheckOutClick, BookingDetailAction.OnExploreClick, BookingDetailAction.OnMessageClick,
             -> Unit
         }
     }

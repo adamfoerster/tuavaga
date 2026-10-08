@@ -63,6 +63,7 @@ fun BookingDetailRoot(
     onCheckIn: () -> Unit,
     onCheckOut: () -> Unit,
     onExplore: () -> Unit,
+    onMessage: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) {
@@ -79,6 +80,7 @@ fun BookingDetailRoot(
                 BookingDetailAction.OnCheckInClick -> onCheckIn()
                 BookingDetailAction.OnCheckOutClick -> onCheckOut()
                 BookingDetailAction.OnExploreClick -> onExplore()
+                BookingDetailAction.OnMessageClick -> onMessage()
                 else -> Unit
             }
             viewModel.onAction(action)
@@ -135,7 +137,7 @@ fun BookingDetailScreen(
                         KbText(booking.directions!!, typography.body)
                     }
                 }
-                CounterpartPanel(booking)
+                CounterpartPanel(booking, onMessage = { onAction(BookingDetailAction.OnMessageClick) })
                 ValuePanel(booking)
                 CancelSection(booking, state, onAction)
             }
@@ -330,18 +332,19 @@ private fun OwnerAnswer(booking: Booking, state: BookingDetailState, onAction: (
 }
 
 @Composable
-private fun CounterpartPanel(booking: Booking) {
+private fun CounterpartPanel(booking: Booking, onMessage: () -> Unit) {
     val typography = KerbTheme.typography
     KbPanel(title = if (booking.role == BookingRole.RENTER) "Locador" else "Locatário") {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 KbAvatar(initialsOf(booking.counterpart.name ?: booking.counterpartShortName))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     KbText(booking.counterpartShortName, typography.md)
                     if (booking.counterpartPlace.isNotEmpty()) {
                         KbText(booking.counterpartPlace, typography.dataSmall, color = KerbTheme.colors.inkMuted)
                     }
                 }
+                KbButton("Mensagem", onMessage, variant = KbButtonVariant.Ghost, size = KbButtonSize.Small)
             }
             if (booking.role == BookingRole.OWNER) booking.vehicle?.let { KbText(it.line(), typography.body) }
         }

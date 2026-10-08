@@ -7,7 +7,7 @@
 | 2 · Locador: minhas vagas e cadastro de vaga | 0.4.0 | concluída |
 | 3 · Explorar e pedir reserva | 0.5.0 | concluída |
 | 4 · Ciclo da reserva | 0.6.0 | concluída |
-| 5 · Chat e notificações em tempo real | 0.7.0 | pendente |
+| 5 · Chat e notificações em tempo real | 0.7.0 | concluída |
 | 6 · Perfil | 0.8.0 | pendente |
 
 ## Contexto
@@ -307,6 +307,25 @@ navegação cruzada (ex.: "Enviar solicitação" → detalhe da reserva) é feit
   badges no seletor de condomínio ("1 nova") e na tab bar.
 - Testes: ViewModels de chat (envio otimista, falha) e notificações (filtro, agrupamento, marcar
   lidas) com fakes de `Flow`.
+
+**Como ficou (diferenças em relação ao plano acima)**
+- Sem pg_cron para lembrete e atraso: `notify_due_bookings()` roda dentro de `settle_bookings()` (fase 4),
+  que já é chamada a cada leitura; um índice único garante um aviso de cada por reserva. Tipos de
+  notificação: `request`, `booked` (aprovação automática), `approved`, `rejected`, `cancelled`,
+  `expired`, `reminder`, `late`; `review` ficou no backlog com a avaliação.
+- Sem RPC de envio: o insert em `messages` é direto, protegido pela RLS (sempre como si mesmo, só texto).
+  A observação do pedido vira a primeira mensagem do chat.
+- Mensagens de sistema também para "RESERVA CONFIRMADA", "PEDIDO RECUSADO", "RESERVA CANCELADA",
+  "CHECK-OUT · …" e "SAÍDA AJUSTADA PARA …" (extensão da fase 4).
+- `my_conversations` monta a aba Mensagens (última mensagem e não lidas por reserva); conversas sem
+  mensagens aparecem enquanto a reserva está ativa.
+- Realtime: em vez de aplicar cada evento, o app recarrega a consulta a cada mudança
+  (`RealtimeChanges.liveQuery`), o que evita buracos entre a carga inicial e a assinatura; sem Realtime,
+  carrega e tenta assinar de novo (2 s → 60 s).
+- Contadores: sino ao lado do seletor de condomínio (não havia lugar desenhado para entrar nas
+  notificações), "N novas" por condomínio na troca e badge na aba Mensagens. "Mensagem" no detalhe da
+  reserva abre o chat; tocar no nome no chat abre a reserva.
+- Respostas rápidas são enviadas na hora (sem passar pelo campo).
 
 ## Fase 6 — Perfil (0.8.0)
 

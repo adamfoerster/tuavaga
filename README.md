@@ -2,13 +2,14 @@
 
 App de aluguel de vagas de garagem em condomínio. Kotlin Multiplatform + Compose Multiplatform
 para **Android**, **iOS** e **Web (wasmJs)**, com **Supabase** (Postgres + Auth) no backend e **Room**
-para estado local em todos os targets.
+para estado local em todos os targets. Chat e notificações chegam em tempo real pelo Supabase Realtime.
 
-> Estado atual (fase 4 do design): autenticação, introdução, entrar/criar condomínio, cadastro do
+> Estado atual (fase 5 do design): autenticação, introdução, entrar/criar condomínio, cadastro do
 > morador e veículos, seletor e troca de condomínio, tab bar, "Minhas vagas" com o cadastro de vaga em
 > 3 passos, ganhos do mês, solicitações (aceitar/recusar) e agenda da vaga; o Explorar (lista e mapa da
 > garagem por período, detalhe da vaga e pedido de reserva) e a aba Reservas com detalhe, check-in,
-> check-out, mais tempo e cancelamento, tudo no design system Kerb. As próximas fases estão em
+> check-out, mais tempo e cancelamento; chat de cada reserva e central de notificações em tempo real
+> (Supabase Realtime), tudo no design system Kerb. As próximas fases estão em
 > [docs/plano-design.md](docs/plano-design.md).
 
 ## Configuração
@@ -50,7 +51,7 @@ app                         KMP: App() raiz, áreas de navegação, shell (selet
 androidApp                  Application Android (AGP 9 não permite KMP no módulo de app)
 iosApp                      projeto Xcode
 core/domain                 Result/DataError, User, sessão, condomínios, veículos, BrFormats, termos e disponibilidade de vaga, reservas (Booking, regras, BookingRepository), fuso do app (AppTime)
-core/data                   cliente Supabase, repositórios de sessão/condomínios/veículos/reservas, BuildKonfig (AppConfig)
+core/data                   cliente Supabase (Auth, Postgrest, Realtime), repositórios de sessão/condomínios/veículos/reservas, liveQuery, BuildKonfig (AppConfig)
 core/database               Room 3: TuaVagaDatabase, DAOs, drivers por plataforma, worker SQLite web
 core/presentation           UiText, ObserveAsEvents, datas, valores e status de reserva em português, formulário de recusa
 core/design-system          Kerb: tema escuro/claro, fontes (Barlow, Barlow Condensed, JetBrains Mono) e componentes Kb*
@@ -58,6 +59,8 @@ feature/auth/{domain,data,presentation}   login, cadastro, confirmação, recupe
 feature/bookings/presentation    aba Reservas, detalhe da reserva, check-in e check-out
 feature/explore/{domain,data,presentation}   Explorar: lista/mapa por período, detalhe da vaga, pedido de reserva
 feature/hosting/{domain,data,presentation}   locador: Minhas vagas, cadastro/edição de vaga, solicitações, agenda
+feature/messages/{domain,data,presentation}   aba Mensagens e chat da reserva
+feature/notifications/{domain,data,presentation}   central de notificações (sino com contador)
 feature/onboarding/presentation   introdução, entrar/criar condomínio, cadastro do morador e veículos
 feature/profile/presentation      aba Perfil (por ora: identidade e "Sair da conta")
 supabase                    migrations SQL, testes das migrations (PGlite) e instruções do painel
@@ -73,6 +76,10 @@ supabase                    migrations SQL, testes das migrations (PGlite) e ins
 - **Reservas**: `BookingRepository` (em `core`, usado por Reservas e Minhas vagas) guarda a última lista do
   servidor no Room (`booking_cache`, JSON por usuário); as telas mostram o cache na hora e atualizam em
   seguida, e cada ação (aceitar, cancelar, check-in…) recarrega o cache.
+- **Tempo real**: `RealtimeChanges.liveQuery` (core/data) assina as mudanças de uma tabela no Supabase
+  Realtime e recarrega a consulta a cada mudança; sem Realtime (offline, socket bloqueado) carrega mesmo
+  assim e tenta assinar de novo com espera crescente. Conversas e notificações são compartilhadas
+  (`shareIn`) entre a tela e os contadores do shell.
 - **Room na Web**: usa `WebWorkerSQLiteDriver` com o worker em `core/database/sqlite-worker/worker.js`
   (SQLite WASM + OPFS). O alias do webpack que liga o worker fica em `app/webpack.config.d/`.
   Sem OPFS (ex.: aba anônima) o banco cai para memória.

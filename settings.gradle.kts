@@ -53,6 +53,14 @@ include(":feature:hosting:domain")
 include(":feature:hosting:data")
 include(":feature:hosting:presentation")
 
+include(":feature:messages:domain")
+include(":feature:messages:data")
+include(":feature:messages:presentation")
+
+include(":feature:notifications:domain")
+include(":feature:notifications:data")
+include(":feature:notifications:presentation")
+
 include(":feature:onboarding:presentation")
 
 include(":feature:profile:presentation")

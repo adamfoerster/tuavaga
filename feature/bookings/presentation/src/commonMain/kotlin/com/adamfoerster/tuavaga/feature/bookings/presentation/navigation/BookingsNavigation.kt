@@ -25,8 +25,13 @@ data class CheckOutRoute(val bookingId: String)
 /**
  * Booking detail, check-in and check-out (boards 10, 24, 25).
  * @param onExplore look for another spot (rejected, cancelled or expired booking).
+ * @param onOpenChat opens the booking chat (another feature, wired by the app).
  */
-fun NavGraphBuilder.bookingsGraph(navController: NavController, onExplore: () -> Unit) {
+fun NavGraphBuilder.bookingsGraph(
+    navController: NavController,
+    onExplore: () -> Unit,
+    onOpenChat: (bookingId: String) -> Unit,
+) {
     composable<BookingDetailRoute> { entry ->
         val route = entry.toRoute<BookingDetailRoute>()
         BookingDetailRoot(
@@ -35,6 +40,7 @@ fun NavGraphBuilder.bookingsGraph(navController: NavController, onExplore: () ->
             onCheckIn = { navController.navigate(CheckInRoute(route.bookingId)) },
             onCheckOut = { navController.navigate(CheckOutRoute(route.bookingId)) },
             onExplore = onExplore,
+            onMessage = { onOpenChat(route.bookingId) },
         )
     }
     composable<CheckInRoute> { entry ->

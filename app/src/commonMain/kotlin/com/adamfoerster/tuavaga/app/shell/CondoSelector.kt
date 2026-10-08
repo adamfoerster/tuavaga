@@ -30,6 +30,8 @@ import com.adamfoerster.tuavaga.core.designsystem.KerbTheme
 import com.adamfoerster.tuavaga.core.designsystem.components.KbButton
 import com.adamfoerster.tuavaga.core.designsystem.components.KbButtonSize
 import com.adamfoerster.tuavaga.core.designsystem.components.KbButtonVariant
+import com.adamfoerster.tuavaga.core.designsystem.components.KbIconButton
+import com.adamfoerster.tuavaga.core.designsystem.components.KbIcons
 import com.adamfoerster.tuavaga.core.designsystem.components.KbListItem
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTag
 import com.adamfoerster.tuavaga.core.designsystem.components.KbText
@@ -49,7 +51,8 @@ internal fun Membership.placeLine(): String = listOfNotNull(
 
 /** Board "Extensão · Seletor de condomínio": the active condominium, tap to switch. */
 @Composable
-internal fun CondoSelectorBar(active: Membership?, onClick: () -> Unit) {
+/** [unread] notifications show on the bell next to it (board "Seletor de condomínio" badge). */
+internal fun CondoSelectorBar(active: Membership?, unread: Int, onClick: () -> Unit, onNotifications: () -> Unit) {
     val colors = KerbTheme.colors
     Row(
         modifier = Modifier
@@ -83,6 +86,13 @@ internal fun CondoSelectorBar(active: Membership?, onClick: () -> Unit) {
             }
             KbText("▼", KerbTheme.typography.dataSmall, color = colors.inkMuted)
         }
+        KbIconButton(
+            icon = KbIcons.Bell,
+            contentDescription = if (unread > 0) "Notificações, $unread novas" else "Notificações",
+            onClick = onNotifications,
+            badge = unread,
+            modifier = Modifier.padding(start = 8.dp),
+        )
     }
 }
 
@@ -91,6 +101,7 @@ internal fun CondoSelectorBar(active: Membership?, onClick: () -> Unit) {
 internal fun CondoSwitcherSheet(
     memberships: List<Membership>,
     activeId: String?,
+    unreadByCondo: Map<String, Int>,
     onSelect: (String) -> Unit,
     onAddCondo: () -> Unit,
     onDismiss: () -> Unit,
@@ -136,6 +147,7 @@ internal fun CondoSwitcherSheet(
             }
             memberships.forEach { membership ->
                 val isActive = membership.condo.id == activeId
+                val unread = unreadByCondo[membership.condo.id] ?: 0
                 KbListItem(
                     title = membership.condo.name,
                     meta = membership.placeLine(),
@@ -143,7 +155,11 @@ internal fun CondoSwitcherSheet(
                     selected = isActive,
                     glow = true,
                     onClick = { onSelect(membership.condo.id) },
-                    trailing = if (isActive) ({ KbTag("Ativo", tone = KbTone.Go) }) else null,
+                    trailing = when {
+                        unread > 0 -> ({ KbTag(if (unread == 1) "1 nova" else "$unread novas", tone = KbTone.Danger) })
+                        isActive -> ({ KbTag("Ativo", tone = KbTone.Go) })
+                        else -> null
+                    },
                 )
             }
             KbButton(
