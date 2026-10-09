@@ -62,6 +62,3 @@ sealed interface ResidentDataEvent {
     /** Joined (and the condominium is now the active one). */
     data object Finished : ResidentDataEvent
 }
-
-/** Colors offered in the vehicle form (stored as typed). */
-val VEHICLE_COLORS = listOf("Preto", "Branco", "Prata", "Cinza", "Vermelho", "Azul", "Outra")

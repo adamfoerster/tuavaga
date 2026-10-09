@@ -4,13 +4,13 @@ App de aluguel de vagas de garagem em condomínio. Kotlin Multiplatform + Compos
 para **Android**, **iOS** e **Web (wasmJs)**, com **Supabase** (Postgres + Auth) no backend e **Room**
 para estado local em todos os targets. Chat e notificações chegam em tempo real pelo Supabase Realtime.
 
-> Estado atual (fase 5 do design): autenticação, introdução, entrar/criar condomínio, cadastro do
+> Estado atual (todas as fases do design, 0 a 6): autenticação, introdução, entrar/criar condomínio, cadastro do
 > morador e veículos, seletor e troca de condomínio, tab bar, "Minhas vagas" com o cadastro de vaga em
 > 3 passos, ganhos do mês, solicitações (aceitar/recusar) e agenda da vaga; o Explorar (lista e mapa da
 > garagem por período, detalhe da vaga e pedido de reserva) e a aba Reservas com detalhe, check-in,
 > check-out, mais tempo e cancelamento; chat de cada reserva e central de notificações em tempo real
-> (Supabase Realtime), tudo no design system Kerb. As próximas fases estão em
-> [docs/plano-design.md](docs/plano-design.md).
+> (Supabase Realtime) e o Perfil com veículos, condomínios, sair e excluir a conta, tudo no design
+> system Kerb. O plano por fases e o backlog estão em [docs/plano-design.md](docs/plano-design.md).
 
 ## Configuração
 
@@ -62,7 +62,7 @@ feature/hosting/{domain,data,presentation}   locador: Minhas vagas, cadastro/edi
 feature/messages/{domain,data,presentation}   aba Mensagens e chat da reserva
 feature/notifications/{domain,data,presentation}   central de notificações (sino com contador)
 feature/onboarding/presentation   introdução, entrar/criar condomínio, cadastro do morador e veículos
-feature/profile/presentation      aba Perfil (por ora: identidade e "Sair da conta")
+feature/profile/{domain,data,presentation}   aba Perfil: veículos, condomínios, sair e excluir a conta
 supabase                    migrations SQL, testes das migrations (PGlite) e instruções do painel
 ```
 

@@ -3,6 +3,7 @@ package com.adamfoerster.tuavaga.core.data.vehicle
 import com.adamfoerster.tuavaga.core.data.util.remoteCall
 import com.adamfoerster.tuavaga.core.data.util.toRemoteError
 import com.adamfoerster.tuavaga.core.domain.util.DataError
+import com.adamfoerster.tuavaga.core.domain.util.EmptyResult
 import com.adamfoerster.tuavaga.core.domain.util.Result
 import com.adamfoerster.tuavaga.core.domain.vehicle.NewVehicle
 import com.adamfoerster.tuavaga.core.domain.vehicle.Vehicle
@@ -69,11 +70,47 @@ internal class SupabaseVehicleRepository(
     } catch (e: CancellationException) {
         throw e
     } catch (e: Throwable) {
-        // 23505 = unique_violation on (owner_id, plate).
-        if (e is PostgrestRestException && e.code == "23505") {
-            Result.Failure(VehicleError.DuplicatePlate)
-        } else {
-            Result.Failure(VehicleError.Remote(e.toRemoteError()))
-        }
+        Result.Failure(e.toVehicleError())
     }
+
+    override suspend fun update(vehicle: Vehicle): Result<Vehicle, VehicleError> = try {
+        val dto = NewVehicleDto(
+            plate = vehicle.plate,
+            model = vehicle.model.trim(),
+            color = vehicle.color.trim(),
+            type = vehicle.type.toDb(),
+        )
+        Result.Success(
+            postgrest.from("vehicles")
+                .update(dto) {
+                    select()
+                    filter { eq("id", vehicle.id) }
+                }
+                .decodeSingle<VehicleDto>()
+                .toVehicle(),
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Throwable) {
+        Result.Failure(e.toVehicleError())
+    }
+
+    override suspend fun remove(vehicleId: String): EmptyResult<VehicleError> = try {
+        postgrest.from("vehicles").delete { filter { eq("id", vehicleId) } }
+        Result.Success(Unit)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Throwable) {
+        Result.Failure(e.toVehicleError())
+    }
+}
+
+internal fun Throwable.toVehicleError(): VehicleError =
+    (this as? PostgrestRestException)?.let { vehicleErrorOf(it.code, it.message) } ?: VehicleError.Remote(toRemoteError())
+
+/** 23505 = unique_violation on (owner_id, plate); vehicle_in_use comes from the delete guard trigger. */
+internal fun vehicleErrorOf(code: String?, message: String?): VehicleError? = when {
+    code == "23505" -> VehicleError.DuplicatePlate
+    message?.contains("vehicle_in_use") == true -> VehicleError.InUse
+    else -> null
 }

@@ -140,6 +140,8 @@ class ResidentDataViewModel(
                         when (val error = joined.error) {
                             CondoError.InvalidBlock -> it.copy(isSubmitting = false, blockError = ResidentTexts.blockRequired)
                             is CondoError.Remote -> it.copy(isSubmitting = false, error = error.error.toUiText())
+                            // Only raised when leaving; never by join/create.
+                            CondoError.ActiveBookings -> it.copy(isSubmitting = false)
                         }
                     }
                     return@launch
@@ -206,6 +208,8 @@ class ResidentDataViewModel(
                                 },
                             )
                             is VehicleError.Remote -> it.copy(isSubmitting = false, error = error.error.toUiText())
+                            // Only raised when removing; never by add.
+                            VehicleError.InUse -> it.copy(isSubmitting = false)
                         }
                     }
                     return false

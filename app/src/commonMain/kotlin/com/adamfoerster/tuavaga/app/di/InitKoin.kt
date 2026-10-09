@@ -16,6 +16,7 @@ import com.adamfoerster.tuavaga.feature.messages.presentation.di.messagesPresent
 import com.adamfoerster.tuavaga.feature.notifications.data.di.notificationsDataModule
 import com.adamfoerster.tuavaga.feature.notifications.presentation.di.notificationsPresentationModule
 import com.adamfoerster.tuavaga.feature.onboarding.presentation.di.onboardingPresentationModule
+import com.adamfoerster.tuavaga.feature.profile.data.di.profileDataModule
 import com.adamfoerster.tuavaga.feature.profile.presentation.di.profilePresentationModule
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModelOf
@@ -36,6 +37,7 @@ fun initKoin(config: KoinAppDeclaration? = null) {
             coreDataModule,
             authDataModule,
             authPresentationModule,
+            profileDataModule,
             profilePresentationModule,
             onboardingPresentationModule,
             exploreDataModule,

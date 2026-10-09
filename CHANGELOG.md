@@ -8,6 +8,22 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-08
+
+### Adicionado
+
+- Migration `20261013000000_account.sql`: veículo em uso por reserva ativa não pode ser removido,
+  `leave_condominium` (recusa com reserva ativa e pausa as vagas do usuário no condomínio) e
+  `delete_own_account` (cancela as reservas futuras avisando a outra parte e apaga a conta).
+- Perfil completo: nome, bloco e unidade do condomínio ativo, total de reservas feitas, veículos
+  (adicionar, editar, remover), condomínios (trocar o ativo, sair, adicionar), atalhos "em breve" para
+  preferências de notificação, ajuda e denúncia, sair da conta e excluir a conta com confirmação.
+
+### Alterado
+
+- Sair de um condomínio passa pela RPC `leave_condominium` em vez de apagar o vínculo direto.
+- A lista de cores de veículo mudou de `feature/onboarding` para `core/domain`.
+
 ## [0.7.0] - 2026-10-08
 
 ### Adicionado

@@ -10,14 +10,14 @@ import com.adamfoerster.tuavaga.core.domain.condo.Membership
 import com.adamfoerster.tuavaga.core.domain.condo.MembershipKind
 import com.adamfoerster.tuavaga.core.domain.condo.NewCondominium
 import com.adamfoerster.tuavaga.core.domain.condo.ResidentInfo
+import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
+import com.adamfoerster.tuavaga.core.domain.spot.Availability
+import com.adamfoerster.tuavaga.core.domain.spot.Prices
+import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
 import com.adamfoerster.tuavaga.core.domain.util.DataError
 import com.adamfoerster.tuavaga.core.domain.util.EmptyResult
 import com.adamfoerster.tuavaga.core.domain.util.Result
-import com.adamfoerster.tuavaga.core.domain.spot.ApprovalMode
-import com.adamfoerster.tuavaga.core.domain.spot.Availability
 import com.adamfoerster.tuavaga.feature.hosting.domain.HostingRepository
-import com.adamfoerster.tuavaga.core.domain.spot.Prices
-import com.adamfoerster.tuavaga.core.domain.spot.SpotFeature
 import com.adamfoerster.tuavaga.feature.hosting.domain.Spot
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotDraft
 import com.adamfoerster.tuavaga.feature.hosting.domain.SpotError
@@ -67,7 +67,7 @@ class FakeCondos(vararg memberships: Membership) : CondoRepository {
     override suspend fun blocksOf(condoId: String): Result<List<String>, DataError.Remote> = Result.Success(emptyList())
     override suspend fun join(condoId: String, resident: ResidentInfo): EmptyResult<CondoError> = Result.Success(Unit)
     override suspend fun create(condo: NewCondominium, resident: ResidentInfo): Result<String, CondoError> = Result.Success("x")
-    override suspend fun leave(condoId: String): EmptyResult<DataError.Remote> = Result.Success(Unit)
+    override suspend fun leave(condoId: String): EmptyResult<CondoError> = Result.Success(Unit)
 }
 
 class FakeHosting(spots: List<Spot> = emptyList()) : HostingRepository {

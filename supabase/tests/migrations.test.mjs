@@ -461,5 +461,34 @@ if (hasPublication) {
   console.log('  skip Realtime publication (not supported by PGlite)');
 }
 
+// --- Fase 6: perfil e conta ---------------------------------------------------------------------
+console.log('\n# account');
+await as(U2);
+await expectError('vehicle used by an active booking stays', 'delete from public.vehicles where id = $1', [vehicle], 'vehicle_in_use');
+const spare = (await expectOk('add a second vehicle', `insert into public.vehicles (plate, model, color, type) values ('XYZ4E56', 'CG 160', 'Vermelha', 'moto') returning id`))?.[0]?.id;
+await expectOk('edit it', `update public.vehicles set color = 'Preta' where id = $1 returning color`, [spare], (r) => r[0]?.color === 'Preta' ? null : JSON.stringify(r));
+await expectOk('remove an unused vehicle', 'delete from public.vehicles where id = $1 returning id', [spare], (r) => r.length === 1 ? null : 'not removed');
+await expectError('cannot leave with active bookings', `select public.leave_condominium('${condoId}')`, [], 'active_bookings');
+await expectError('cannot delete the account while parked', 'select public.delete_own_account()', [], 'booking_in_progress');
+await expectOk('check-out the parked booking', checkOut(lateId));
+await expectOk('delete the account', 'select public.delete_own_account()');
+
+await db.exec('reset role');
+await expectOk('user, profile, memberships and vehicles are gone', `select
+    (select count(*) from auth.users where id = $1)::int u, (select count(*) from public.profiles where id = $1)::int p,
+    (select count(*) from public.memberships where user_id = $1)::int m, (select count(*) from public.vehicles where owner_id = $1)::int v,
+    (select count(*) from public.bookings where $1 in (renter_id, owner_id))::int b`, [U2],
+  (r) => r[0].u + r[0].p + r[0].m + r[0].v + r[0].b === 0 ? null : JSON.stringify(r[0]));
+await as(U1);
+await expectOk('the owner was told about the cancelled bookings', `select title, booking_id from public.notifications where kind = 'cancelled' and title like 'Marina R. cancelou%'`, [],
+  (r) => r.length === 3 && r.every((x) => x.booking_id === null) ? null : JSON.stringify(r)); // one from phase 4 + the two of the deletion
+await expectOk('leave the condominium', `select public.leave_condominium('${condoId}')`);
+await expectOk('own spots there are paused', 'select count(*)::int n from public.spots where owner_id = $1 and status = $2', [U1, 'active'], (r) => r[0].n === 0 ? null : 'active=' + r[0].n);
+await expectOk('no longer reads the condominium', 'select * from public.condominiums where id = $1', [condoId], (r) => r.length === 0 ? null : 'still visible');
+await as('anon');
+await expectError('anon cannot delete accounts', 'select public.delete_own_account()', [], 'permission denied');
+await expectError('anon cannot leave', `select public.leave_condominium('${condoId}')`, [], 'permission denied');
+await db.exec('reset role');
+
 console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL PASSED');
 process.exit(failures ? 1 : 0);

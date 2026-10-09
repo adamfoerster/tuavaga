@@ -121,16 +121,14 @@ internal class SupabaseCondoRepository(
         Json.decodeFromString<String>(data)
     }
 
-    override suspend fun leave(condoId: String): EmptyResult<DataError.Remote> {
-        val uid = userId.first() ?: return Result.Failure(DataError.Remote.UNAUTHORIZED)
-        val result = remoteCall {
-            postgrest.from("memberships").delete {
-                filter {
-                    eq("user_id", uid)
-                    eq("condo_id", condoId)
-                }
-            }
-            Unit
+    override suspend fun leave(condoId: String): EmptyResult<CondoError> {
+        val result = try {
+            postgrest.rpc("leave_condominium", buildJsonObject { put("p_condo", condoId) })
+            Result.Success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            Result.Failure(leaveErrorOf((e as? PostgrestRestException)?.message) ?: CondoError.Remote(e.toRemoteError()))
         }
         if (result is Result.Success) refreshMemberships()
         return result
@@ -174,3 +172,7 @@ private inline fun <T> condoCall(block: () -> T): Result<T, CondoError> = try {
         Result.Failure(CondoError.Remote(e.toRemoteError()))
     }
 }
+
+/** leave_condominium raises active_bookings (see 20261013000000_account.sql). */
+internal fun leaveErrorOf(message: String?): CondoError? =
+    if (message?.contains("active_bookings") == true) CondoError.ActiveBookings else null

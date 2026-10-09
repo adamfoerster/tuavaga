@@ -78,7 +78,7 @@ class FakeCondoRepository : CondoRepository {
         return createResult
     }
 
-    override suspend fun leave(condoId: String): EmptyResult<DataError.Remote> = Result.Success(Unit)
+    override suspend fun leave(condoId: String): EmptyResult<CondoError> = Result.Success(Unit)
 }
 
 class FakeActiveCondoRepository : ActiveCondoRepository {
@@ -106,6 +106,10 @@ class FakeVehicleRepository(existing: List<Vehicle> = emptyList()) : VehicleRepo
         vehicles += saved
         return Result.Success(saved)
     }
+
+    override suspend fun update(vehicle: Vehicle): Result<Vehicle, VehicleError> = Result.Success(vehicle)
+
+    override suspend fun remove(vehicleId: String): EmptyResult<VehicleError> = Result.Success(Unit)
 }
 
 class FakeSessionRepository(fullName: String? = "Adam Foerster") : SessionRepository {

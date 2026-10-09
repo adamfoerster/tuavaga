@@ -42,6 +42,8 @@ kotlin {
             implementation(projects.feature.auth.data)
             implementation(projects.feature.auth.presentation)
             implementation(projects.feature.bookings.presentation)
+            implementation(projects.feature.profile.domain)
+            implementation(projects.feature.profile.data)
             implementation(projects.feature.profile.presentation)
             implementation(projects.feature.explore.domain)
             implementation(projects.feature.explore.data)

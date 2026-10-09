@@ -13,6 +13,7 @@ Rode as migrations **em ordem** no SQL Editor do projeto (ou `supabase db push` 
 | `20261010000100_bookings.sql` | extensão `btree_gist`, reservas (`bookings`) com código sequencial e trava contra sobreposição, RLS e as RPCs `search_spots`, `spot_busy_ranges` e `request_booking` |
 | `20261011000000_booking_lifecycle.sql` | ciclo da reserva: colunas de cancelamento e check-in/out, `my_bookings` (lista do locatário e do locador) e as RPCs `approve_booking`, `reject_booking`, `cancel_booking`, `check_in`, `check_out`, `extend_booking` |
 | `20261012000000_messages_notifications.sql` | chat (`messages`) e notificações (`notifications`) com RLS, gatilho que gera avisos e mensagens de sistema a cada mudança da reserva, lembrete de check-in e aviso de atraso, as RPCs `my_conversations`, `mark_messages_read`, `mark_notifications_read`, e a publicação no Realtime |
+| `20261013000000_account.sql` | perfil: trava para remover veículo em uso, `leave_condominium` e `delete_own_account` |
 
 Regras da fase de condomínios:
 
@@ -68,6 +69,17 @@ Regras do ciclo da reserva:
   ```sql
   select cron.schedule('settle-bookings', '*/5 * * * *', 'select public.settle_bookings()');
   ```
+
+Regras do perfil e da conta:
+
+- Veículo usado por reserva pendente, confirmada ou em curso não pode ser removido (`vehicle_in_use`,
+  gatilho `vehicles_guard`); editar continua livre.
+- `leave_condominium` recusa a saída com reserva pendente, confirmada ou em curso naquele condomínio
+  (`active_bookings`); ao sair, as vagas do usuário ali ficam pausadas.
+- `delete_own_account` recusa com reserva em curso (`booking_in_progress`); senão cancela as reservas
+  futuras (a outra parte é notificada), apaga as reservas do usuário e o próprio `auth.users`, que leva em
+  cascata perfil, vínculos, veículos, vagas e notificações. As notificações da outra parte ficam (sem o
+  link para a reserva apagada).
 
 Regras do chat e das notificações:
 

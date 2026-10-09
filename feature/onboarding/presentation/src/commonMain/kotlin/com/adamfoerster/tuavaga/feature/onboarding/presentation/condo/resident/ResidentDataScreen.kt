@@ -35,6 +35,7 @@ import com.adamfoerster.tuavaga.core.designsystem.components.KbText
 import com.adamfoerster.tuavaga.core.designsystem.components.KbTone
 import com.adamfoerster.tuavaga.core.designsystem.components.KbToolbar
 import com.adamfoerster.tuavaga.core.domain.condo.MembershipKind
+import com.adamfoerster.tuavaga.core.domain.vehicle.VEHICLE_COLORS
 import com.adamfoerster.tuavaga.core.domain.vehicle.VehicleType
 import com.adamfoerster.tuavaga.core.presentation.ObserveAsEvents
 import org.koin.compose.viewmodel.koinViewModel

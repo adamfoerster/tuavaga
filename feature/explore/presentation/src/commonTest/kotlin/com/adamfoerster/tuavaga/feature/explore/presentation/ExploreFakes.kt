@@ -70,7 +70,7 @@ class FakeCondos(vararg memberships: Membership) : CondoRepository {
     override suspend fun garageOf(condoId: String): Result<List<GarageLevel>, DataError.Remote> = Result.Success(emptyList())
     override suspend fun join(condoId: String, resident: ResidentInfo): EmptyResult<CondoError> = Result.Success(Unit)
     override suspend fun create(condo: NewCondominium, resident: ResidentInfo): Result<String, CondoError> = Result.Success("x")
-    override suspend fun leave(condoId: String): EmptyResult<DataError.Remote> = Result.Success(Unit)
+    override suspend fun leave(condoId: String): EmptyResult<CondoError> = Result.Success(Unit)
 }
 
 class FakeActiveCondo(initial: String? = null) : ActiveCondoRepository {
@@ -84,6 +84,8 @@ class FakeVehicles(vararg vehicles: Vehicle) : VehicleRepository {
     private val list = vehicles.toList()
     override suspend fun list(): Result<List<Vehicle>, DataError.Remote> = Result.Success(list)
     override suspend fun add(vehicle: NewVehicle): Result<Vehicle, VehicleError> = Result.Failure(VehicleError.DuplicatePlate)
+    override suspend fun update(vehicle: Vehicle): Result<Vehicle, VehicleError> = Result.Success(vehicle)
+    override suspend fun remove(vehicleId: String): EmptyResult<VehicleError> = Result.Success(Unit)
 }
 
 val onix = Vehicle("v1", "ABC1D23", "Onix", "Preto", VehicleType.CAR)

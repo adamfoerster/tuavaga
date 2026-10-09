@@ -54,7 +54,7 @@ class NotificationsViewModelTest {
         override suspend fun garageOf(condoId: String): Result<List<GarageLevel>, DataError.Remote> = Result.Success(emptyList())
         override suspend fun join(condoId: String, resident: ResidentInfo): EmptyResult<CondoError> = Result.Success(Unit)
         override suspend fun create(condo: NewCondominium, resident: ResidentInfo): Result<String, CondoError> = Result.Success("x")
-        override suspend fun leave(condoId: String): EmptyResult<DataError.Remote> = Result.Success(Unit)
+        override suspend fun leave(condoId: String): EmptyResult<CondoError> = Result.Success(Unit)
     }
 
     private fun membership(id: String, name: String) =

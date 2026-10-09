@@ -63,4 +63,6 @@ include(":feature:notifications:presentation")
 
 include(":feature:onboarding:presentation")
 
+include(":feature:profile:domain")
+include(":feature:profile:data")
 include(":feature:profile:presentation")

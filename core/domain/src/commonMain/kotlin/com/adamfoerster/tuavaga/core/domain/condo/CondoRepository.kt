@@ -9,6 +9,9 @@ import kotlinx.coroutines.flow.Flow
 sealed interface CondoError : Error {
     /** The chosen block is not one of the condominium's blocks. */
     data object InvalidBlock : CondoError
+
+    /** Leaving while a booking there is pending, confirmed or ongoing. */
+    data object ActiveBookings : CondoError
     data class Remote(val error: DataError.Remote) : CondoError
 }
 
@@ -40,8 +43,8 @@ interface CondoRepository {
     /** Creates the condominium with its garage and joins it; returns the new id. Same refresh rule as [join]. */
     suspend fun create(condo: NewCondominium, resident: ResidentInfo): Result<String, CondoError>
 
-    /** Leaves [condoId] and refreshes [memberships]. */
-    suspend fun leave(condoId: String): EmptyResult<DataError.Remote>
+    /** Leaves [condoId] (the user's spots there are paused) and refreshes [memberships]. */
+    suspend fun leave(condoId: String): EmptyResult<CondoError>
 }
 
 /** Which condominium is active on this device (everything below the selector follows it). */

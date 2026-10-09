@@ -8,7 +8,7 @@
 | 3 · Explorar e pedir reserva | 0.5.0 | concluída |
 | 4 · Ciclo da reserva | 0.6.0 | concluída |
 | 5 · Chat e notificações em tempo real | 0.7.0 | concluída |
-| 6 · Perfil | 0.8.0 | pendente |
+| 6 · Perfil | 0.8.0 | concluída |
 
 ## Contexto
 
@@ -338,6 +338,18 @@ navegação cruzada (ex.: "Enviar solicitação" → detalhe da reserva) é feit
 excluir conta com confirmação. Itens não desenhados (preferências de notificação, ajuda, denunciar)
 aparecem como entradas desabilitadas "em breve".
 Testes: ViewModel do perfil (remover veículo em uso por reserva futura → erro), exclusão de conta.
+
+**Como ficou (diferenças em relação ao plano acima)**
+- A migration também trava a remoção de veículo em uso (gatilho), troca a saída de condomínio para a
+  RPC `leave_condominium` (recusa com reserva ativa e pausa as vagas do usuário) e mantém as notificações
+  da outra parte quando a conta é apagada (`booking_id` vira nulo).
+- `delete_own_account` recusa enquanto houver reserva em curso; as reservas do usuário são apagadas antes
+  do `auth.users` (as vagas têm `on delete restrict` nas reservas).
+- Sem a tag "Verificado" (não há verificação de morador) e sem edição de nome/telefone (não desenhada).
+- "Reservas" conta as reservas feitas como locatário (confirmadas, em curso ou concluídas).
+- O condomínio ativo não tem "Sair": é preciso ativar outro antes. Erros de sair/excluir aparecem numa
+  faixa fixa no rodapé, já que esses botões ficam no fim da lista.
+- Veículos: adicionar e editar numa folha (placa, modelo, cor, tipo) com remoção confirmada.
 
 ## Backlog (não desenhado ou adiado)
 

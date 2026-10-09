@@ -107,7 +107,7 @@ fun MainShellScreen(
                         onWantSpot = { onAction(ShellAction.OnTabSelect(MainTab.EXPLORE)) },
                     )
                     MainTab.MESSAGES -> ConversationsRoot(onOpenChat = navigation.onOpenChat, today = appToday())
-                    MainTab.PROFILE -> ProfileRoot()
+                    MainTab.PROFILE -> ProfileRoot(onAddCondo = navigation.onAddCondo)
                 }
             }
             KbTabBar(
