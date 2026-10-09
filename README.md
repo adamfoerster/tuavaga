@@ -31,7 +31,24 @@ Requisitos: JDK 17+, Android SDK (compileSdk 37 é baixado automaticamente), Xco
 | Testes | `./gradlew testAndroidHostTest` (roda os `commonTest` na JVM) |
 | Testes das migrations | `npm --prefix supabase/tests ci && npm --prefix supabase/tests test` (Postgres em memória) |
 
-Build de produção web: `./gradlew :app:wasmJsBrowserDistribution` → `app/build/dist/wasmJs/productionExecutable/`.
+### Build de produção web
+
+`./gradlew :app:wasmJsBrowserDistribution` gera o site estático completo em
+`app/build/dist/wasmJs/productionExecutable/`: `index.html`, `tuavaga.js`, os `.wasm`, os pedaços
+`.js` numerados, os recursos do Compose (fontes) e o worker do SQLite. Para publicar, copie o
+conteúdo dessa pasta para qualquer servidor estático. A versão de desenvolvimento fica ao lado, em
+`app/build/dist/wasmJs/developmentExecutable/`.
+
+O worker do SQLite usa OPFS, que só funciona em contexto seguro: em produção sirva o site por
+**HTTPS** (em `localhost` funciona sem). Fora disso o banco local cai para memória (veja "Room na Web"
+abaixo).
+
+## Testes manuais
+
+O [roteiro de testes](docs/roteiro-de-testes.md) é o guia para a equipe de testadores humanos: contas e
+dados de teste, casos por área (autenticação, condomínio, vagas, Explorar, ciclo da reserva, chat,
+notificações, perfil e testes transversais), planilha de execução e modelo de defeito. Atualize-o
+quando uma funcionalidade mudar.
 
 ## Versão e changelog
 

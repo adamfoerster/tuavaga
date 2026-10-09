@@ -8,6 +8,20 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-10-09
+
+### Adicionado
+
+- `docs/roteiro-de-testes.md`: roteiro de testes manuais para a equipe de testadores (preparação,
+  contas, casos por área, planilha de execução e modelo de defeito), linkado no README.
+
+## [0.8.1] - 2026-10-09
+
+### Alterado
+
+- README: onde fica o build de produção web (`app/build/dist/wasmJs/productionExecutable/`), o que
+  ele contém, como publicar e a exigência de HTTPS para o banco local (OPFS).
+
 ## [0.8.0] - 2026-10-08
 
 ### Adicionado
